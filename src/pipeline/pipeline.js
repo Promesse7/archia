@@ -1,8 +1,8 @@
-import { setupCamera } from "./camera";
-import { loadMobileNet, extractFeatures } from "./mobilenet";
-import { createFragmentClassifier, classifyFragment } from "./fragmentClassifier";
-import { reconstruct3D } from "./reconstruction3D";
-import { adjustMesh } from "./meshAdjuster";
+import { setupCamera } from "../ai/camera";
+import { loadMobileNet, extractFeatures } from "../ai/mobilenet";
+import { createFragmentClassifier, classifyFragment } from "../ai/fragmentClassifier";
+import { reconstruct3D } from "../reconstruction/reconstruction3D";
+import { adjustMesh } from "../reconstruction/meshAdjuster";
 
 export async function startPipeline(videoElement) {
   await setupCamera(videoElement);
