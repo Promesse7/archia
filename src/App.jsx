@@ -1,22 +1,53 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CameraCapture from "./components/CameraCapture";
 import ReconstructionViewer from "./components/ReconstructionViewer";
 import { getPotteryReconstructor } from "./reconstruction/potteryRebuilder";
+import { preloadModels } from "./ai/classifier";
+import { getDepthEstimator } from "./ai/depthEstimator";
 
 export default function App() {
   const [fragments, setFragments] = useState([]);
   const [currentFragment, setCurrentFragment] = useState(null);
   const [reconstructedMesh, setReconstructedMesh] = useState(null);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState("Initializing...");
+
+  // Preload all AI models on app startup
+  useEffect(() => {
+    async function loadModels() {
+      try {
+        setLoadingProgress("Loading TensorFlow.js...");
+        
+        // Load depth estimator
+        setLoadingProgress("Loading depth estimator...");
+        await getDepthEstimator();
+        
+        // Load classifier (includes MobileNet)
+        setLoadingProgress("Loading MobileNet (16MB - may take 30-60 sec)...");
+        const success = await preloadModels();
+        
+        if (success) {
+          setLoadingProgress("All models loaded!");
+          setModelsLoaded(true);
+        } else {
+          setLoadingProgress("Failed to load models - see console");
+        }
+      } catch (err) {
+        console.error("Model loading error:", err);
+        setLoadingProgress("Error: " + err.message);
+      }
+    }
+
+    loadModels();
+  }, []);
 
   const handleCaptureResult = (result) => {
     console.log("Fragment captured:", result);
     setCurrentFragment(result);
 
-    // Add to fragments collection
     const newFragments = [...fragments, result];
     setFragments(newFragments);
 
-    // Trigger reconstruction
     reconstructPottery(newFragments);
   };
 
@@ -25,7 +56,6 @@ export default function App() {
       const reconstructor = getPotteryReconstructor();
       reconstructor.clear();
 
-      // Add all fragments to reconstructor
       fragmentsList.forEach(fragment => {
         if (fragment.pointCloud && fragment.pointCloud.length > 0) {
           reconstructor.addFragment(fragment.pointCloud, {
@@ -35,7 +65,6 @@ export default function App() {
         }
       });
 
-      // Build mesh
       const mesh = reconstructor.reconstruct();
       setReconstructedMesh(mesh);
 
@@ -51,6 +80,69 @@ export default function App() {
     setReconstructedMesh(null);
     getPotteryReconstructor().clear();
   };
+
+  // Show loading screen while models are loading
+  if (!modelsLoaded) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#1a1a1a",
+        color: "#fff",
+        fontFamily: "system-ui, sans-serif",
+        padding: "20px"
+      }}>
+        <div style={{
+          fontSize: "4em",
+          marginBottom: "20px",
+          animation: "spin 2s linear infinite"
+        }}>
+          🏺
+        </div>
+        
+        <h2 style={{ margin: "0 0 12px 0" }}>Loading ARCHIA</h2>
+        
+        <div style={{
+          width: "300px",
+          height: "4px",
+          backgroundColor: "#333",
+          borderRadius: "2px",
+          overflow: "hidden",
+          marginBottom: "12px"
+        }}>
+          <div style={{
+            width: "100%",
+            height: "100%",
+            background: "linear-gradient(90deg, #c2a070, #8b6f47)",
+            animation: "loading 1.5s ease-in-out infinite"
+          }} />
+        </div>
+        
+        <p style={{ 
+          color: "#888", 
+          fontSize: "0.9em",
+          textAlign: "center",
+          maxWidth: "400px"
+        }}>
+          {loadingProgress}
+        </p>
+
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @keyframes loading {
+            0%, 100% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div style={{ 
