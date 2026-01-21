@@ -1,44 +1,106 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 
 function PotteryMesh({ mesh }) {
   const meshRef = useRef();
+  const [localMesh, setLocalMesh] = useState(null);
 
   useEffect(() => {
-    if (mesh && meshRef.current) {
-      // Copy geometry and material from the provided mesh
-      meshRef.current.geometry = mesh.geometry;
-      meshRef.current.material = mesh.material;
+    if (mesh) {
+      console.log("✅ Updating 3D viewer with new mesh");
+      console.log("Geometry vertices:", mesh.geometry.attributes.position.count);
+      console.log("Material:", mesh.material.type);
+      
+      // Clone the mesh to avoid sharing references
+      const clonedGeometry = mesh.geometry.clone();
+      const clonedMaterial = mesh.material.clone();
+      
+      setLocalMesh({
+        geometry: clonedGeometry,
+        material: clonedMaterial
+      });
     }
   }, [mesh]);
 
   // Gentle rotation for presentation
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.y += 0.002;
+      meshRef.current.rotation.y += 0.003;
     }
   });
 
+  if (!localMesh) {
+    // Show placeholder while waiting for real data
+    return (
+      <mesh position={[0, 0, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[2, 2.5, 5, 32]} />
+        <meshStandardMaterial 
+          color="#555" 
+          metalness={0.1} 
+          roughness={0.9}
+          transparent
+          opacity={0.3}
+          wireframe
+        />
+      </mesh>
+    );
+  }
+
   return (
-    <mesh ref={meshRef} castShadow receiveShadow>
-      {/* Default geometry before mesh is loaded */}
-      {!mesh && (
-        <>
-          <cylinderGeometry args={[2, 2, 5, 32]} />
-          <meshStandardMaterial 
-            color="#c2a070" 
-            metalness={0.1} 
-            roughness={0.8} 
-          />
-        </>
-      )}
-    </mesh>
+    <mesh 
+      ref={meshRef}
+      geometry={localMesh.geometry}
+      material={localMesh.material}
+      castShadow 
+      receiveShadow
+      position={[0, 0, 0]}
+    />
   );
 }
 
-function Scene({ mesh }) {
+function PointCloudVisualization({ points, visible = false }) {
+  const pointsRef = useRef();
+
+  useEffect(() => {
+    if (!points || points.length === 0 || !visible) return;
+
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(points.length * 3);
+
+    points.forEach((point, i) => {
+      positions[i * 3] = point.x;
+      positions[i * 3 + 1] = point.y;
+      positions[i * 3 + 2] = point.z;
+    });
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    if (pointsRef.current) {
+      pointsRef.current.geometry = geometry;
+    }
+
+    return () => {
+      geometry.dispose();
+    };
+  }, [points, visible]);
+
+  if (!visible || !points || points.length === 0) return null;
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry />
+      <pointsMaterial
+        size={0.05}
+        color="#4caf50"
+        sizeAttenuation
+      />
+    </points>
+  );
+}
+
+function Scene({ mesh, showPointCloud, pointCloud }) {
   return (
     <>
       {/* Lighting */}
@@ -82,6 +144,9 @@ function Scene({ mesh }) {
         fadeStrength={1}
       />
 
+      {/* Point cloud (optional visualization) */}
+      <PointCloudVisualization points={pointCloud} visible={showPointCloud} />
+
       {/* Pottery mesh */}
       <PotteryMesh mesh={mesh} />
 
@@ -99,20 +164,57 @@ function Scene({ mesh }) {
   );
 }
 
-export default function ReconstructionViewer({ mesh }) {
-  return (
-    <Canvas
-      shadows
-      style={{ width: "100%", height: "100%" }}
-      dpr={[1, 2]} // Device pixel ratio
-    >
-      <PerspectiveCamera
-        makeDefault
-        position={[8, 6, 8]}
-        fov={50}
-      />
+export default function ReconstructionViewer({ mesh, pointCloud = null, showPointCloud = false }) {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    if (mesh) {
+      const vertexCount = mesh.geometry.attributes.position.count;
+      const faceCount = mesh.geometry.index ? mesh.geometry.index.count / 3 : vertexCount / 3;
       
-      <Scene mesh={mesh} />
-    </Canvas>
+      setStats({
+        vertices: vertexCount,
+        faces: Math.floor(faceCount),
+        type: mesh.geometry.type
+      });
+    }
+  }, [mesh]);
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <Canvas
+        shadows
+        style={{ width: "100%", height: "100%" }}
+        dpr={[1, 2]}
+      >
+        <PerspectiveCamera
+          makeDefault
+          position={[8, 6, 8]}
+          fov={50}
+        />
+        
+        <Scene mesh={mesh} showPointCloud={showPointCloud} pointCloud={pointCloud} />
+      </Canvas>
+
+      {/* Stats overlay */}
+      {stats && (
+        <div style={{
+          position: "absolute",
+          bottom: "10px",
+          left: "10px",
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          color: "#fff",
+          padding: "8px 12px",
+          borderRadius: "4px",
+          fontSize: "0.75em",
+          fontFamily: "monospace",
+          pointerEvents: "none"
+        }}>
+          <div>Vertices: {stats.vertices.toLocaleString()}</div>
+          <div>Faces: {stats.faces.toLocaleString()}</div>
+          <div>Type: {stats.type}</div>
+        </div>
+      )}
+    </div>
   );
 }

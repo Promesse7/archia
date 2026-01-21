@@ -19,24 +19,44 @@ export class FragmentClassifier {
 
     if (this.loaded) {
       console.log("MobileNet already loaded");
-      return;
+      return true;
     }
 
     this.loading = true;
+    const startTime = Date.now();
+    const modelLoadTimeout = 180000; // 3 minutes timeout
 
     try {
-      console.log("🔄 Loading MobileNet base model (this may take 30-60 seconds)...");
+      console.log("🔄 Loading MobileNet base model (this may take 1-3 minutes)...");
       console.log("Model size: ~16MB - please be patient");
 
-      // Set TensorFlow backend
+      // Set TensorFlow backend with progress callback
+      console.log("Initializing TensorFlow.js...");
       await tf.ready();
-      console.log("TensorFlow.js backend:", tf.getBackend());
+      console.log("✅ TensorFlow.js initialized successfully");
+      console.log("Backend being used:", tf.getBackend());
 
-      // Load MobileNet
-      this.mobileNet = await mobilenet.load({ 
-        version: 2, 
-        alpha: 1.0 
+      // Set up progress callback
+      const progressCallback = (fraction) => {
+        const percent = Math.round(fraction * 100);
+        console.log(`Download progress: ${percent}%`);
+      };
+
+      // Load MobileNet with timeout and progress
+      console.log("Starting MobileNet model download...");
+      const loadPromise = mobilenet.load({
+        version: 2,
+        alpha: 1.0
       });
+
+      // Add timeout to the load promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Model loading timed out after ${modelLoadTimeout/1000} seconds`));
+        }, modelLoadTimeout);
+      });
+
+      this.mobileNet = await Promise.race([loadPromise, timeoutPromise]);
 
       console.log("✅ MobileNet loaded successfully!");
 
@@ -135,6 +155,26 @@ export class FragmentClassifier {
   }
 
   async classify(imgElement) {
+    if (!this.loaded) {
+      if (this.loading) {
+        // Wait for initialization to complete
+        await new Promise((resolve, reject) => {
+          const checkReady = setInterval(() => {
+            if (this.loaded) {
+              clearInterval(checkReady);
+              resolve();
+            } else if (!this.loading) {
+              clearInterval(checkReady);
+              reject(new Error("Model initialization failed"));
+            }
+          }, 100);
+        });
+      } else {
+        // Try to initialize if not already loading
+        await this.initialize();
+      }
+    }
+
     if (!this.mobileNet || !this.classifier) {
       throw new Error("Classifier not initialized. Please wait for models to load.");
     }
@@ -256,19 +296,75 @@ export class FragmentClassifier {
 let classifierInstance = null;
 
 export async function getFragmentClassifier() {
+  // If we already have an instance and it's loaded, return it
+  if (classifierInstance?.loaded) {
+    return classifierInstance;
+  }
+
+  // Create new instance if none exists
   if (!classifierInstance) {
     classifierInstance = new FragmentClassifier();
-    await classifierInstance.initialize();
-  } else if (!classifierInstance.loaded && !classifierInstance.loading) {
-    // If instance exists but not loaded, initialize it
-    await classifierInstance.initialize();
   }
+
+  // If not loaded and not currently loading, initialize
+  if (!classifierInstance.loaded && !classifierInstance.loading) {
+    try {
+      await classifierInstance.initialize();
+      classifierInstance.loaded = true;
+      classifierInstance.loading = false;
+    } catch (error) {
+      console.error("❌ Failed to initialize classifier:", error);
+      // Reset instance on failure to allow retry
+      classifierInstance = null;
+      throw error;
+    }
+  } else if (classifierInstance.loading) {
+    // If already loading, wait for it to complete with a longer timeout
+    const maxWaitTime = 180000; // 3 minutes max wait time
+    const startTime = Date.now();
+    const checkInterval = 500; // Check every 500ms
+    
+    while (classifierInstance?.loading && (Date.now() - startTime) < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+
+    if (classifierInstance?.loading) {
+      const error = new Error("Model loading timed out after 3 minutes");
+      console.error(error);
+      classifierInstance = null; // Reset to allow retry
+      throw error;
+    }
+  }
+
+  if (!classifierInstance?.loaded) {
+    const error = new Error("Failed to load classifier");
+    console.error(error);
+    throw error;
+  }
+
   return classifierInstance;
 }
 
 export async function classifyFragment(imgElement) {
-  const classifier = await getFragmentClassifier();
-  return await classifier.classify(imgElement);
+  try {
+    if (!imgElement || !imgElement.complete) {
+      throw new Error("Invalid image element");
+    }
+
+    console.log("🔍 Starting fragment classification...");
+    const classifier = await getFragmentClassifier();
+
+    if (!classifier) {
+      throw new Error("Classifier not available");
+    }
+
+    const result = await classifier.classify(imgElement);
+    console.log("🎯 Classification result:", result);
+    return result;
+  } catch (error) {
+    console.error("❌ Classification failed:", error);
+    throw new Error(`Classification failed: ${error.message}`);
+  }
 }
 
 // Preload function to call on app startup
