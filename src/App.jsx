@@ -144,7 +144,7 @@ export default function App() {
     );
   }
 
-  return (   
+  return (
     <div style={{ 
       maxWidth: "1200px", 
       margin: "0 auto", 
@@ -182,212 +182,201 @@ export default function App() {
         gap: "20px",
         marginBottom: "24px"
       }}>
+        {/* Camera Capture Section */}
+        <div>
+          <CameraCapture onResult={handleCaptureResult} modelsReady={modelsLoaded} />
+        </div>
+
+        {/* Current Fragment Info */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1rem',
-          flex: 1,
-          minHeight: 0,
-          '@media (min-width: 768px)': {
-            flexDirection: 'row',
-            '> *': {
-              flex: 1,
-              minWidth: 0
-            }
-          }
+          border: "2px solid #444",
+          borderRadius: "8px",
+          padding: "16px",
+          backgroundColor: "#1a1a1a"
         }}>
-          {/* Camera Section */}
-          <div style={{
-            backgroundColor: '#2a2a2a',
-            borderRadius: '8px',
-            padding: '1rem',
-            flex: '1 1 50%',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '50vh',
-            order: 1
-          }}>
-            <h2 style={{ marginTop: 0 }}>Camera</h2>
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-              minHeight: 0
-            }}>
-              <CameraCapture 
-                onResult={handleCaptureResult} 
-                modelsReady={modelsLoaded}
+          <h3 style={{ marginTop: 0 }}>Latest Fragment</h3>
+          
+          {currentFragment ? (
+            <div>
+              <img 
+                src={currentFragment.image} 
+                alt="Captured fragment"
+                style={{ 
+                  width: "100%", 
+                  borderRadius: "4px",
+                  marginBottom: "12px"
+                }} 
               />
-            </div>
-          </div>
-
-          {/* 3D Reconstruction Section */}
-          <div style={{
-            backgroundColor: '#2a2a2a',
-            borderRadius: '8px',
-            padding: '1rem',
-            flex: '1 1 50%',
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '50vh',
-            order: 3,
-            '@media (min-width: 768px)': {
-              order: 2
-            }
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '1rem',
-              flexWrap: 'wrap',
-              gap: '0.5rem'
-            }}>
-              <h2 style={{ margin: 0 }}>3D Reconstruction</h2>
-              <button
-                onClick={clearFragments}
-                disabled={fragments.length === 0}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#ff4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  opacity: fragments.length === 0 ? 0.5 : 1,
-                  pointerEvents: fragments.length === 0 ? 'none' : 'auto',
-                  fontSize: '0.9rem',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                Clear All
-              </button>
-            </div>
-            <div style={{
-              flex: 1,
-              minHeight: '300px',
-              backgroundColor: '#1a1a1a',
-              borderRadius: '4px',
-              overflow: 'hidden',
-              position: 'relative',
-              touchAction: 'none',
-              WebkitTapHighlightColor: 'transparent'
-            }}>
-              <ReconstructionViewer 
-                fragments={fragments}
-                currentFragment={currentFragment}
-                reconstructedMesh={reconstructedMesh}
-              />
-            </div>
-          </div>
-
-          {/* Fragments Gallery - Moves below on mobile */}
-          {fragments.length > 0 && (
-            <div style={{
-              backgroundColor: '#2a2a2a',
-              borderRadius: '8px',
-              padding: '1rem',
-              order: 2,
-              '@media (min-width: 768px)': {
-                order: 3,
-                gridColumn: '1 / -1'
-              }
-            }}>
-              <h3>Captured Fragments ({fragments.length})</h3>
-              <div style={{
-                display: 'flex',
-                gap: '0.75rem',
-                overflowX: 'auto',
-                padding: '0.5rem 0.25rem',
-                scrollbarWidth: 'thin',
-                scrollbarColor: '#555 #2a2a2a',
-                WebkitOverflowScrolling: 'touch',
-                '&::-webkit-scrollbar': {
-                  height: '6px'
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: '#555',
-                  borderRadius: '3px'
-                },
-                '&::-webkit-scrollbar-track': {
-                  backgroundColor: '#2a2a2a',
-                  borderRadius: '3px'
-                }
+              
+              <div style={{ 
+                display: "grid", 
+                gridTemplateColumns: "1fr 1fr",
+                gap: "8px",
+                fontSize: "0.9em"
               }}>
-                {fragments.map((fragment, index) => (
-                  <div 
-                    key={index}
-                    style={{
-                      flex: '0 0 auto',
-                      width: '80px',
-                      height: '80px',
-                      backgroundColor: '#1a1a1a',
-                      borderRadius: '6px',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      border: currentFragment === fragment ? '2px solid #4CAF50' : '1px solid #444',
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s, border-color 0.2s',
-                      ':active': {
-                        transform: 'scale(0.95)'
-                      },
-                      '@media (min-width: 480px)': {
-                        width: '100px',
-                        height: '100px'
-                      }
-                    }}
-                    onClick={() => setCurrentFragment(fragment)}
-                  >
-                    {fragment.imageData && (
-                      <img 
-                        src={fragment.imageData} 
-                        alt={`Fragment ${index + 1}`}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          opacity: 0.9
-                        }}
-                        draggable="false"
-                      />
-                    )}
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      backgroundColor: 'rgba(0,0,0,0.7)',
-                      padding: '2px 4px',
-                      fontSize: '0.65rem',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      minHeight: '20px',
-                      '@media (min-width: 480px)': {
-                        fontSize: '0.7rem'
-                      }
-                    }}>
-                      <span>#{index + 1}</span>
-                      {fragment.classification && (
-                        <span style={{ 
-                          color: getFragmentColor(fragment.classification.fragmentType),
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          marginLeft: '4px',
-                          maxWidth: '60%'
-                        }}>
-                          {fragment.classification.fragmentType}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                <div>
+                  <strong>Type:</strong><br />
+                  <span style={{ 
+                    color: getFragmentColor(currentFragment.classification?.fragmentType)
+                  }}>
+                    {currentFragment.classification?.fragmentType || "unknown"}
+                  </span>
+                </div>
+                
+                <div>
+                  <strong>Confidence:</strong><br />
+                  {(currentFragment.classification?.confidence * 100).toFixed(1)}%
+                </div>
+                
+                <div>
+                  <strong>Points:</strong><br />
+                  {currentFragment.pointCloud?.length || 0}
+                </div>
+                
+                <div>
+                  <strong>Symmetry:</strong><br />
+                  {currentFragment.classification?.symmetry || "N/A"}
+                </div>
               </div>
+            </div>
+          ) : (
+            <div style={{
+              padding: "60px 20px",
+              textAlign: "center",
+              color: "#666"
+            }}>
+              No fragment captured yet
             </div>
           )}
         </div>
+      </div>
+
+      {/* 3D Reconstruction Viewer */}
+      <div style={{
+        border: "2px solid #444",
+        borderRadius: "8px",
+        padding: "16px",
+        backgroundColor: "#1a1a1a",
+        marginBottom: "24px"
+      }}>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "12px"
+        }}>
+          <h3 style={{ margin: 0 }}>3D Reconstruction</h3>
+          
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button
+              onClick={() => reconstructPottery(fragments)}
+              disabled={fragments.length === 0}
+              style={{
+                padding: "6px 12px",
+                fontSize: "0.9em",
+                opacity: fragments.length === 0 ? 0.5 : 1
+              }}
+            >
+              🔄 Rebuild
+            </button>
+            
+            <button
+              onClick={clearFragments}
+              disabled={fragments.length === 0}
+              style={{
+                padding: "6px 12px",
+                fontSize: "0.9em",
+                opacity: fragments.length === 0 ? 0.5 : 1
+              }}
+            >
+              🗑 Clear All
+            </button>
+          </div>
+        </div>
+        
+        <div style={{ 
+          height: "500px",
+          borderRadius: "4px",
+          backgroundColor: "#0a0a0a",
+          position: "relative"
+        }}>
+          <ReconstructionViewer 
+            mesh={reconstructedMesh} 
+            pointCloud={currentFragment?.pointCloud}
+            showPointCloud={false}
+          />
+          
+          {fragments.length === 0 && (
+            <div style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              color: "#666",
+              fontSize: "1.1em",
+              textAlign: "center",
+              pointerEvents: "none"
+            }}>
+              Capture fragments to begin reconstruction
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Fragment Gallery */}
+      {fragments.length > 0 && (
+        <div style={{
+          border: "2px solid #444",
+          borderRadius: "8px",
+          padding: "16px",
+          backgroundColor: "#1a1a1a"
+        }}>
+          <h3 style={{ marginTop: 0 }}>
+            Fragment Gallery ({fragments.length})
+          </h3>
+          
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+            gap: "12px"
+          }}>
+            {fragments.map((fragment, index) => (
+              <div 
+                key={fragment.timestamp}
+                style={{
+                  border: "1px solid #444",
+                  borderRadius: "4px",
+                  padding: "8px",
+                  backgroundColor: "#222",
+                  cursor: "pointer",
+                  transition: "transform 0.2s",
+                }}
+                onClick={() => setCurrentFragment(fragment)}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+              >
+                <img 
+                  src={fragment.image} 
+                  alt={`Fragment ${index + 1}`}
+                  style={{ 
+                    width: "100%", 
+                    borderRadius: "2px",
+                    marginBottom: "4px"
+                  }} 
+                />
+                <div style={{
+                  fontSize: "0.75em",
+                  textAlign: "center",
+                  color: getFragmentColor(fragment.classification?.fragmentType)
+                }}>
+                  {fragment.classification?.fragmentType}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer style={{
         marginTop: "32px",
@@ -403,9 +392,6 @@ export default function App() {
         </p>
       </footer>
     </div>
-
-     <div/>
-      <div/>
   );
 }
 

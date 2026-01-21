@@ -46,7 +46,7 @@ export class FragmentClassifier {
       console.log("Starting MobileNet model download...");
       const loadPromise = mobilenet.load({
         version: 2,
-        alpha: 1.0
+        alpha: 0.75
       });
 
       // Add timeout to the load promise
