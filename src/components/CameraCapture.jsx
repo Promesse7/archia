@@ -614,7 +614,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
       </div>
       
       {/* Add some styles for the spinner */}
-      <style jsx>{`
+      <style jsx="true">{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }

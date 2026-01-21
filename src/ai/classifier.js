@@ -8,90 +8,88 @@ export class FragmentClassifier {
     this.labels = ["rim", "body", "base"];
     this.loading = false;
     this.loaded = false;
-    this.embeddingSize = null; // Will be determined after loading MobileNet
+    this.embeddingSize = null;
+    this.onProgress = null; // Progress callback
+  }
+
+  setProgressCallback(callback) {
+    this.onProgress = callback;
+  }
+
+  reportProgress(stage, percent) {
+    if (this.onProgress) {
+      this.onProgress({ stage, percent });
+    }
+    console.log(`[${percent.toFixed(0)}%] ${stage}`);
   }
 
   async initialize() {
     if (this.loading) {
-      console.log("Already loading MobileNet, please wait...");
+      console.log("Already loading, please wait...");
       return;
     }
 
     if (this.loaded) {
-      console.log("MobileNet already loaded");
+      console.log("Already loaded");
       return true;
     }
 
     this.loading = true;
-    const startTime = Date.now();
-    const modelLoadTimeout = 180000; // 3 minutes timeout
 
     try {
-      console.log("🔄 Loading MobileNet base model (this may take 1-3 minutes)...");
-      console.log("Model size: ~16MB - please be patient");
-
-      // Set TensorFlow backend with progress callback
-      console.log("Initializing TensorFlow.js...");
+      // Stage 1: TensorFlow.js (0-25%)
+      this.reportProgress("Initializing TensorFlow.js...", 0);
       await tf.ready();
-      console.log("✅ TensorFlow.js initialized successfully");
-      console.log("Backend being used:", tf.getBackend());
+      this.reportProgress("TensorFlow.js ready (backend: " + tf.getBackend() + ")", 25);
 
-      // Set up progress callback
-      const progressCallback = (fraction) => {
-        const percent = Math.round(fraction * 100);
-        console.log(`Download progress: ${percent}%`);
-      };
+      // Stage 2: MobileNet Download (25-75%)
+      this.reportProgress("Downloading MobileNet (~16MB)...", 30);
+      
+      // Use lighter model for faster loading
+this.mobileNet = await mobilenet.load({
+  version: 2,
+  alpha: 0.75,
+  modelUrl: "/models/mobilenet/model.json"
+});
 
-      // Load MobileNet with timeout and progress
-      console.log("Starting MobileNet model download...");
-      const loadPromise = mobilenet.load({
-        version: 2,
-        alpha: 0.75
-      });
 
-      // Add timeout to the load promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Model loading timed out after ${modelLoadTimeout/1000} seconds`));
-        }, modelLoadTimeout);
-      });
+      this.reportProgress("MobileNet loaded successfully", 75);
 
-      this.mobileNet = await Promise.race([loadPromise, timeoutPromise]);
-
-      console.log("✅ MobileNet loaded successfully!");
-
-      // Detect embedding size by running a test inference
+      // Stage 3: Detect embedding size (75-80%)
+      this.reportProgress("Detecting model configuration...", 76);
       await this.detectEmbeddingSize();
+      this.reportProgress("Model configured", 80);
 
-      // Try to load pre-trained classifier
+      // Stage 4: Load/Create Classifier (80-100%)
+      this.reportProgress("Loading classifier...", 85);
       try {
         this.classifier = await tf.loadLayersModel("indexeddb://fragment-classifier");
-        console.log("✅ Loaded saved classifier from browser storage");
+        this.reportProgress("Classifier loaded from cache", 95);
         
-        // Verify loaded classifier matches current embedding size
         const expectedShape = this.classifier.layers[0].getInputAt(0).shape[1];
         if (expectedShape !== this.embeddingSize) {
-          console.warn(`⚠️ Saved classifier expects ${expectedShape} features but MobileNet outputs ${this.embeddingSize}`);
-          console.log("Creating new classifier to match current MobileNet configuration");
+          console.warn(`Cached classifier mismatch, creating new one`);
           this.createClassifier();
         }
       } catch (err) {
-        console.log("No saved classifier found, creating new one");
+        this.reportProgress("Creating new classifier...", 90);
         this.createClassifier();
       }
 
+      this.reportProgress("All models ready!", 100);
       this.loaded = true;
       this.loading = false;
+      return true;
 
     } catch (err) {
       this.loading = false;
-      console.error("❌ Failed to load MobileNet:", err);
-      throw new Error(`MobileNet loading failed: ${err.message}`);
+      this.reportProgress("Failed to load models", 0);
+      console.error("❌ Initialization failed:", err);
+      throw new Error(`Model loading failed: ${err.message}`);
     }
   }
 
   async detectEmbeddingSize() {
-    // Create a dummy image to detect embedding size
     const dummyImage = tf.zeros([224, 224, 3]);
     
     return tf.tidy(() => {
@@ -100,19 +98,17 @@ export class FragmentClassifier {
       const embedding = this.mobileNet.infer(normalized, true);
       
       this.embeddingSize = embedding.shape[1];
-      console.log(`✅ MobileNet embedding size detected: ${this.embeddingSize}`);
+      console.log(`✅ Embedding size: ${this.embeddingSize}`);
       
       return this.embeddingSize;
     });
   }
 
   createClassifier() {
-    console.log(`Creating new classifier neural network for ${this.embeddingSize} features...`);
-
     this.classifier = tf.sequential({
       layers: [
         tf.layers.dense({
-          inputShape: [this.embeddingSize], // Dynamic based on MobileNet output
+          inputShape: [this.embeddingSize],
           units: 128,
           activation: "relu",
           kernelRegularizer: tf.regularizers.l2({ l2: 0.01 })
@@ -137,8 +133,6 @@ export class FragmentClassifier {
     });
 
     console.log("✅ Classifier created");
-    console.log("Model summary:");
-    this.classifier.summary();
   }
 
   extractFeatures(imgElement) {
@@ -149,54 +143,39 @@ export class FragmentClassifier {
         .div(255.0)
         .expandDims(0);
 
-      const embedding = this.mobileNet.infer(img, true);
-      return embedding;
+      return this.mobileNet.infer(img, true);
     });
   }
 
   async classify(imgElement) {
     if (!this.loaded) {
       if (this.loading) {
-        // Wait for initialization to complete
         await new Promise((resolve, reject) => {
-          const checkReady = setInterval(() => {
+          const check = setInterval(() => {
             if (this.loaded) {
-              clearInterval(checkReady);
+              clearInterval(check);
               resolve();
             } else if (!this.loading) {
-              clearInterval(checkReady);
-              reject(new Error("Model initialization failed"));
+              clearInterval(check);
+              reject(new Error("Loading failed"));
             }
           }, 100);
         });
       } else {
-        // Try to initialize if not already loading
         await this.initialize();
       }
     }
 
     if (!this.mobileNet || !this.classifier) {
-      throw new Error("Classifier not initialized. Please wait for models to load.");
+      throw new Error("Models not initialized");
     }
-
-    console.log("🔍 Classifying fragment...");
 
     return tf.tidy(() => {
       const features = this.extractFeatures(imgElement);
-      
-      console.log("Feature shape:", features.shape);
-      console.log("Expected shape: [1," + this.embeddingSize + "]");
-      
       const predictions = this.classifier.predict(features);
       
       const probabilities = predictions.dataSync();
       const maxIndex = predictions.argMax(-1).dataSync()[0];
-
-      console.log("Classification probabilities:", {
-        rim: probabilities[0].toFixed(3),
-        body: probabilities[1].toFixed(3),
-        base: probabilities[2].toFixed(3)
-      });
 
       return {
         fragmentType: this.labels[maxIndex],
@@ -217,14 +196,7 @@ export class FragmentClassifier {
       throw new Error("Classifier not initialized");
     }
 
-    const {
-      epochs = 20,
-      batchSize = 16,
-      validationSplit = 0.2,
-      onEpochEnd = null
-    } = options;
-
-    console.log(`Training on ${trainingData.length} samples...`);
+    const { epochs = 20, batchSize = 16, validationSplit = 0.2, onEpochEnd = null } = options;
 
     const features = [];
     const labels = [];
@@ -237,8 +209,6 @@ export class FragmentClassifier {
 
     const xs = tf.concat(features);
     const ys = tf.concat(labels);
-
-    console.log("Training data shape:", xs.shape, "Labels shape:", ys.shape);
 
     await this.classifier.fit(xs, ys, {
       epochs,
@@ -258,20 +228,18 @@ export class FragmentClassifier {
     xs.dispose();
     ys.dispose();
 
-    console.log("✅ Training complete");
     await this.save();
   }
 
   async save() {
     if (this.classifier) {
       await this.classifier.save("indexeddb://fragment-classifier");
-      console.log("✅ Classifier saved to browser storage");
+      console.log("✅ Classifier saved");
     }
   }
 
   getInfo() {
     if (!this.classifier) return null;
-
     return {
       layers: this.classifier.layers.length,
       trainableParams: this.classifier.countParams(),
@@ -282,100 +250,54 @@ export class FragmentClassifier {
   }
 
   dispose() {
-    if (this.classifier) {
-      this.classifier.dispose();
-    }
-    if (this.mobileNet) {
-      this.mobileNet.dispose();
-    }
+    if (this.classifier) this.classifier.dispose();
+    if (this.mobileNet) this.mobileNet.dispose();
     this.loaded = false;
   }
 }
 
-// Singleton instance
+// Singleton
 let classifierInstance = null;
 
 export async function getFragmentClassifier() {
-  // If we already have an instance and it's loaded, return it
   if (classifierInstance?.loaded) {
     return classifierInstance;
   }
 
-  // Create new instance if none exists
   if (!classifierInstance) {
     classifierInstance = new FragmentClassifier();
   }
 
-  // If not loaded and not currently loading, initialize
   if (!classifierInstance.loaded && !classifierInstance.loading) {
-    try {
-      await classifierInstance.initialize();
-      classifierInstance.loaded = true;
-      classifierInstance.loading = false;
-    } catch (error) {
-      console.error("❌ Failed to initialize classifier:", error);
-      // Reset instance on failure to allow retry
-      classifierInstance = null;
-      throw error;
-    }
-  } else if (classifierInstance.loading) {
-    // If already loading, wait for it to complete with a longer timeout
-    const maxWaitTime = 180000; // 3 minutes max wait time
-    const startTime = Date.now();
-    const checkInterval = 500; // Check every 500ms
-    
-    while (classifierInstance?.loading && (Date.now() - startTime) < maxWaitTime) {
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
-    }
-
-    if (classifierInstance?.loading) {
-      const error = new Error("Model loading timed out after 3 minutes");
-      console.error(error);
-      classifierInstance = null; // Reset to allow retry
-      throw error;
-    }
-  }
-
-  if (!classifierInstance?.loaded) {
-    const error = new Error("Failed to load classifier");
-    console.error(error);
-    throw error;
+    await classifierInstance.initialize();
   }
 
   return classifierInstance;
 }
 
 export async function classifyFragment(imgElement) {
-  try {
-    if (!imgElement || !imgElement.complete) {
-      throw new Error("Invalid image element");
-    }
-
-    console.log("🔍 Starting fragment classification...");
-    const classifier = await getFragmentClassifier();
-
-    if (!classifier) {
-      throw new Error("Classifier not available");
-    }
-
-    const result = await classifier.classify(imgElement);
-    console.log("🎯 Classification result:", result);
-    return result;
-  } catch (error) {
-    console.error("❌ Classification failed:", error);
-    throw new Error(`Classification failed: ${error.message}`);
+  if (!imgElement || !imgElement.complete) {
+    throw new Error("Invalid image");
   }
+
+  const classifier = await getFragmentClassifier();
+  return await classifier.classify(imgElement);
 }
 
-// Preload function to call on app startup
-export async function preloadModels() {
-  console.log("🚀 Preloading AI models...");
+export async function preloadModels(onProgress) {
   try {
-    await getFragmentClassifier();
-    console.log("✅ All AI models preloaded successfully");
+    const classifier = new FragmentClassifier();
+    
+    if (onProgress) {
+      classifier.setProgressCallback(onProgress);
+    }
+    
+    await classifier.initialize();
+    classifierInstance = classifier;
+    
     return true;
   } catch (err) {
-    console.error("❌ Failed to preload models:", err);
+    console.error("❌ Preload failed:", err);
     return false;
   }
 }

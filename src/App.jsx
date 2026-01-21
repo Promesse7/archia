@@ -1,40 +1,70 @@
 import React, { useState, useEffect } from "react";
 import CameraCapture from "./components/CameraCapture";
 import ReconstructionViewer from "./components/ReconstructionViewer";
+import LoadingScreen from "./components/LoadingScreen";
 import { getPotteryReconstructor } from "./reconstruction/potteryRebuilder";
 import { preloadModels } from "./ai/classifier";
 import { getDepthEstimator } from "./ai/depthEstimator";
+
+// Prevent double-loading in React StrictMode
+let modelsStarted = false;
 
 export default function App() {
   const [fragments, setFragments] = useState([]);
   const [currentFragment, setCurrentFragment] = useState(null);
   const [reconstructedMesh, setReconstructedMesh] = useState(null);
   const [modelsLoaded, setModelsLoaded] = useState(false);
-  const [loadingProgress, setLoadingProgress] = useState("Initializing...");
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingStage, setLoadingStage] = useState("Initializing...");
+  const [loadingError, setLoadingError] = useState(null);
 
-  // Preload all AI models on app startup
   useEffect(() => {
+    // Prevent duplicate loading in development
+    if (modelsStarted) return;
+    modelsStarted = true;
+
     async function loadModels() {
       try {
-        setLoadingProgress("Loading TensorFlow.js...");
+        let currentProgress = 0;
+
+        // Stage 1: Depth Estimator (0-25%)
+        setLoadingStage("Initializing depth estimator...");
+        setLoadingProgress(5);
         
-        // Load depth estimator
-        setLoadingProgress("Loading depth estimator...");
         await getDepthEstimator();
         
-        // Load classifier (includes MobileNet)
-        setLoadingProgress("Loading MobileNet (16MB - may take 30-60 sec)...");
-        const success = await preloadModels();
+        setLoadingProgress(25);
+        setLoadingStage("Depth estimator ready");
+
+        // Small delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Stage 2-4: MobileNet & Classifier (25-100%)
+        setLoadingStage("Loading AI models...");
         
+        const success = await preloadModels((progressData) => {
+          // Map classifier progress (0-100) to our range (25-100)
+          const mappedProgress = 25 + (progressData.percent * 0.75);
+          setLoadingProgress(mappedProgress);
+          setLoadingStage(progressData.stage);
+        });
+
         if (success) {
-          setLoadingProgress("All models loaded!");
+          setLoadingProgress(100);
+          setLoadingStage("All models loaded!");
+          
+          // Small delay before showing main app
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           setModelsLoaded(true);
         } else {
-          setLoadingProgress("Failed to load models - see console");
+          throw new Error("Model initialization returned false");
         }
+
       } catch (err) {
         console.error("Model loading error:", err);
-        setLoadingProgress("Error: " + err.message);
+        setLoadingError(err.message);
+        setLoadingStage("Failed to load models");
       }
     }
 
@@ -81,69 +111,18 @@ export default function App() {
     getPotteryReconstructor().clear();
   };
 
-  // Show loading screen while models are loading
+  // Show loading screen
   if (!modelsLoaded) {
     return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#1a1a1a",
-        color: "#fff",
-        fontFamily: "system-ui, sans-serif",
-        padding: "20px"
-      }}>
-        <div style={{
-          fontSize: "4em",
-          marginBottom: "20px",
-          animation: "spin 2s linear infinite"
-        }}>
-          🏺
-        </div>
-        
-        <h2 style={{ margin: "0 0 12px 0" }}>Loading ARCHIA</h2>
-        
-        <div style={{
-          width: "300px",
-          height: "4px",
-          backgroundColor: "#333",
-          borderRadius: "2px",
-          overflow: "hidden",
-          marginBottom: "12px"
-        }}>
-          <div style={{
-            width: "100%",
-            height: "100%",
-            background: "linear-gradient(90deg, #c2a070, #8b6f47)",
-            animation: "loading 1.5s ease-in-out infinite"
-          }} />
-        </div>
-        
-        <p style={{ 
-          color: "#888", 
-          fontSize: "0.9em",
-          textAlign: "center",
-          maxWidth: "400px"
-        }}>
-          {loadingProgress}
-        </p>
-
-        <style>{`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          @keyframes loading {
-            0%, 100% { transform: translateX(-100%); }
-            50% { transform: translateX(100%); }
-          }
-        `}</style>
-      </div>
+      <LoadingScreen 
+        progress={loadingProgress}
+        stage={loadingStage}
+        error={loadingError}
+      />
     );
   }
 
+  // Main app
   return (
     <div style={{ 
       maxWidth: "1200px", 
