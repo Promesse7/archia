@@ -3,10 +3,10 @@ import { classifyFragment } from "../ai/classifier";
 import { getDepthEstimator } from "../ai/depthEstimator";
 
 export default function CameraCapture({ onResult, modelsReady }) {
-  const videoRef = useRef();
-  const canvasRef = useRef();
-  const fileInputRef = useRef();
-  const containerRef = useRef();
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const containerRef = useRef(null);
   
   const [streamStarted, setStreamStarted] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -31,19 +31,35 @@ export default function CameraCapture({ onResult, modelsReady }) {
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleOrientationChange);
     
-    // Clean up event listeners
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleOrientationChange);
     };
   }, []);
 
-  // Toggle controls visibility (useful for mobile fullscreen)
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (videoRef.current?.srcObject) {
+        const tracks = videoRef.current.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  // Toggle controls visibility
   const toggleControls = () => {
     setShowControls(prev => !prev);
   };
 
   const startCamera = async () => {
+    // Check if videoRef is actually attached to DOM
+    if (!videoRef.current) {
+      console.error("videoRef is null - component may not be properly rendered");
+      setError("Video element not available. Try reloading the page.");
+      return;
+    }
+
     if (!modelsReady) {
       setError("AI models not ready yet. Please wait for loading to complete.");
       return;
@@ -53,7 +69,9 @@ export default function CameraCapture({ onResult, modelsReady }) {
     setCameraStatus("Requesting camera access...");
 
     try {
-      console.log("Attempting to access camera...");
+      console.log("Starting camera...");
+      console.log("videoRef exists:", !!videoRef.current);
+      console.log("videoRef.current:", videoRef.current);
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Camera API not supported in this browser.");
@@ -68,30 +86,57 @@ export default function CameraCapture({ onResult, modelsReady }) {
         audio: false
       });
 
-      console.log("Camera access granted:", stream);
+      console.log("Camera access granted, stream:", stream);
 
+      // Double-check ref still exists after async operation
       if (!videoRef.current) {
-        throw new Error("Video element not found");
+        stream.getTracks().forEach(track => track.stop());
+        throw new Error("Video element lost after camera request");
       }
 
       videoRef.current.srcObject = stream;
+      console.log("Stream assigned to video element");
       
+      // Wait for video to be ready
       await new Promise((resolve, reject) => {
-        videoRef.current.onloadedmetadata = () => {
+        const video = videoRef.current;
+        if (!video) {
+          reject(new Error("Video element not available"));
+          return;
+        }
+
+        const onLoadedMetadata = () => {
           console.log("Video metadata loaded");
+          video.removeEventListener('loadedmetadata', onLoadedMetadata);
+          video.removeEventListener('error', onError);
+          clearTimeout(timeoutId);
           resolve();
         };
-        
-        videoRef.current.onerror = (e) => {
-          console.error("Video error:", e);
+
+        const onError = (e) => {
+          console.error("Video error event:", e);
+          video.removeEventListener('loadedmetadata', onLoadedMetadata);
+          video.removeEventListener('error', onError);
+          clearTimeout(timeoutId);
           reject(new Error("Failed to load video stream"));
         };
 
-        setTimeout(() => reject(new Error("Camera timeout")), 10000);
+        const timeoutId = setTimeout(() => {
+          console.error("Camera timeout - video never loaded metadata");
+          video.removeEventListener('loadedmetadata', onLoadedMetadata);
+          video.removeEventListener('error', onError);
+          reject(new Error("Camera timeout - metadata never loaded"));
+        }, 10000);
+
+        video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
+        video.addEventListener('error', onError, { once: true });
       });
 
-      await videoRef.current.play();
-      console.log("Video playing");
+      // Try to play
+      if (videoRef.current) {
+        await videoRef.current.play();
+        console.log("Video playing successfully");
+      }
 
       setStreamStarted(true);
       setCameraStatus("Camera active");
@@ -103,17 +148,17 @@ export default function CameraCapture({ onResult, modelsReady }) {
       let userMessage = "Camera failed: ";
       
       if (err.name === "NotAllowedError") {
-        userMessage += "Permission denied. Allow camera access.";
+        userMessage += "Permission denied. Allow camera access in your browser settings.";
       } else if (err.name === "NotFoundError") {
-        userMessage += "No camera found.";
+        userMessage += "No camera found on this device.";
       } else if (err.name === "NotReadableError") {
-        userMessage += "Camera in use by another app.";
+        userMessage += "Camera is in use by another application.";
       } else {
         userMessage += err.message;
       }
       
       setError(userMessage);
-      setCameraStatus("Error");
+      setCameraStatus("Camera error");
     }
   };
 
@@ -130,19 +175,14 @@ export default function CameraCapture({ onResult, modelsReady }) {
     try {
       console.log("🔍 Starting image processing...");
 
-      // 1. Load models in parallel
-      const [depthEstimator] = await Promise.all([
-        getDepthEstimator().catch(err => {
-          console.error("Depth estimator error:", err);
-          throw new Error("Failed to load depth estimation model");
-        })
-      ]);
+      const depthEstimator = await getDepthEstimator().catch(err => {
+        console.error("Depth estimator error:", err);
+        throw new Error("Failed to load depth estimation model");
+      });
 
-      // 2. Process classification and depth estimation in parallel
       const [classification, depthTensor] = await Promise.all([
         classifyFragment(imgElement).catch(err => {
           console.error("Classification error:", err);
-          // Return a default classification if it fails
           return {
             fragmentType: "unknown",
             confidence: 0,
@@ -160,21 +200,17 @@ export default function CameraCapture({ onResult, modelsReady }) {
       console.log("✅ Classification result:", classification);
       console.log("✅ Depth map computed:", depthTensor.shape);
 
-      // 3. Convert depth to point cloud
       let pointCloud = [];
       try {
         pointCloud = depthEstimator.depthToPointCloud(depthTensor);
         console.log("✅ Point cloud generated:", pointCloud.length, "points");
       } catch (err) {
         console.error("Point cloud generation error:", err);
-        // Continue with empty point cloud if generation fails
         pointCloud = [];
       }
 
-      // 4. Get image data
       const dataUrl = imgElement.src || (canvasRef.current?.toDataURL("image/jpeg", 0.95) || '');
 
-      // 5. Pass results to parent
       onResult({
         image: dataUrl,
         classification,
@@ -183,18 +219,16 @@ export default function CameraCapture({ onResult, modelsReady }) {
         timestamp: Date.now()
       });
 
-      // Clean up
       depthTensor.dispose();
       setCameraStatus("Processing complete");
       setProcessing(false);
 
     } catch (procErr) {
       console.error("❌ Processing error:", procErr);
-      setError(`Processing failed: ${procErr.message}. Please try again.`);
+      setError(`Processing failed: ${procErr.message}`);
       setCameraStatus("Error during processing");
       setProcessing(false);
       
-      // Still notify parent with error state
       onResult({
         image: imgElement.src || '',
         error: procErr.message,
@@ -208,7 +242,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
     const video = videoRef.current;
 
     if (!video || !video.videoWidth || !video.videoHeight) {
-      setError("Video not ready");
+      setError("Video not ready - try restarting the camera");
       return;
     }
 
@@ -333,7 +367,6 @@ export default function CameraCapture({ onResult, modelsReady }) {
               }}
             />
             
-            {/* Capture button overlay for mobile */}
             {isMobile && showControls && (
               <div 
                 onClick={captureFromCamera}
@@ -352,11 +385,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-                  transition: 'transform 0.1s, box-shadow 0.2s',
-                  ':active': {
-                    transform: 'translateX(-50%) scale(0.95)',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
-                  }
+                  transition: 'transform 0.1s, box-shadow 0.2s'
                 }}
               >
                 <div style={{
@@ -424,16 +453,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
                 transition: 'all 0.2s',
                 flex: isMobile ? '1 1 100%' : '0 0 auto',
                 justifyContent: 'center',
-                minHeight: '48px',
-                ':hover': {
-                  backgroundColor: modelsReady ? '#45a049' : '#777',
-                  transform: modelsReady ? 'translateY(-1px)' : 'none',
-                  boxShadow: modelsReady ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
-                },
-                ':active': {
-                  transform: modelsReady ? 'translateY(1px)' : 'none',
-                  boxShadow: 'none'
-                }
+                minHeight: '48px'
               }}
             >
               <span>Start Camera</span>
@@ -458,16 +478,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
                   gap: '0.5rem',
                   transition: 'all 0.2s',
                   minWidth: '180px',
-                  justifyContent: 'center',
-                  ':hover': {
-                    backgroundColor: '#1976D2',
-                    transform: 'translateY(-1px)',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                  },
-                  ':active': {
-                    transform: 'translateY(1px)',
-                    boxShadow: 'none'
-                  }
+                  justifyContent: 'center'
                 }}
               >
                 {processing ? (
@@ -499,16 +510,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
                 gap: '0.5rem',
                 transition: 'all 0.2s',
                 minWidth: '140px',
-                justifyContent: 'center',
-                ':hover': {
-                  backgroundColor: '#d32f2f',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
-                },
-                ':active': {
-                  transform: 'translateY(1px)',
-                  boxShadow: 'none'
-                }
+                justifyContent: 'center'
               }}
             >
               Stop Camera
@@ -540,16 +542,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
               opacity: processing ? 0.7 : 1,
               transition: 'all 0.2s',
               flex: isMobile ? '1 1 100%' : '0 0 auto',
-              justifyContent: 'center',
-              ':hover': {
-                opacity: processing ? 0.7 : 0.9,
-                transform: processing ? 'none' : 'translateY(-1px)',
-                boxShadow: processing ? 'none' : '0 2px 6px rgba(0,0,0,0.15)'
-              },
-              ':active': {
-                transform: 'translateY(1px)',
-                boxShadow: 'none'
-              }
+              justifyContent: 'center'
             }}
           >
             <span>📁 Upload Image</span>
@@ -579,16 +572,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
                 gap: '0.5rem',
                 transition: 'all 0.2s',
                 flex: '1 1 100%',
-                justifyContent: 'center',
-                ':hover': {
-                  backgroundColor: '#d32f2f',
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
-                },
-                ':active': {
-                  transform: 'translateY(1px)',
-                  boxShadow: 'none'
-                }
+                justifyContent: 'center'
               }}
             >
               <span>🛑 Stop Camera</span>
@@ -613,7 +597,6 @@ export default function CameraCapture({ onResult, modelsReady }) {
         {cameraStatus}
       </div>
       
-      {/* Add some styles for the spinner */}
       <style jsx="true">{`
         @keyframes spin {
           0% { transform: rotate(0deg); }

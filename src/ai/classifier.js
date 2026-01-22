@@ -48,8 +48,7 @@ export class FragmentClassifier {
       // Use lighter model for faster loading
 this.mobileNet = await mobilenet.load({
   version: 2,
-  alpha: 0.75,
-  modelUrl: "/models/mobilenet/model.json"
+  alpha: 1.0,
 });
 
 
