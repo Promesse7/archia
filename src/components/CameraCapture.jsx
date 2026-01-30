@@ -14,27 +14,14 @@ export default function CameraCapture({ onResult, modelsReady }) {
   const [cameraStatus, setCameraStatus] = useState("Ready");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showControls, setShowControls] = useState(true);
-  const [orientation, setOrientation] = useState(
-    window.screen.orientation?.type || 'landscape-primary'
-  );
 
-  // Handle window resize and orientation changes
+  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
-
-    const handleOrientationChange = () => {
-      setOrientation(window.screen.orientation?.type || 'landscape-primary');
-    };
-
     window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleOrientationChange);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleOrientationChange);
-    };
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Cleanup on unmount
@@ -47,16 +34,15 @@ export default function CameraCapture({ onResult, modelsReady }) {
     };
   }, []);
 
-  // Toggle controls visibility
   const toggleControls = () => {
     setShowControls(prev => !prev);
   };
 
   const startCamera = async () => {
-    // Check if videoRef is actually attached to DOM
+    // CRITICAL: Ensure video ref exists BEFORE making async call
     if (!videoRef.current) {
-      console.error("videoRef is null - component may not be properly rendered");
-      setError("Video element not available. Try reloading the page.");
+      setError("Video element not initialized. Please refresh the page.");
+      setCameraStatus("Video element error");
       return;
     }
 
@@ -69,60 +55,53 @@ export default function CameraCapture({ onResult, modelsReady }) {
     setCameraStatus("Requesting camera access...");
 
     try {
-      console.log("Starting camera...");
-      console.log("videoRef exists:", !!videoRef.current);
-      console.log("videoRef.current:", videoRef.current);
+      console.log("📹 Starting camera...");
 
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error("Camera API not supported in this browser.");
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: "environment",
-          width: { ideal: 640 },
-          height: { ideal: 480 }
+          width: { ideal: 1280, max: 1920 },
+          height: { ideal: 720, max: 1080 }
         },
         audio: false
       });
 
-      console.log("Camera access granted, stream:", stream);
+      console.log("✅ Camera access granted");
 
-      // Double-check ref still exists after async operation
+      // Double-check ref still exists
       if (!videoRef.current) {
         stream.getTracks().forEach(track => track.stop());
         throw new Error("Video element lost after camera request");
       }
 
       videoRef.current.srcObject = stream;
-      console.log("Stream assigned to video element");
       
-      // Wait for video to be ready
+      // Wait for metadata to load
       await new Promise((resolve, reject) => {
         const video = videoRef.current;
         if (!video) {
-          reject(new Error("Video element not available"));
+          reject(new Error("Video element disappeared"));
           return;
         }
 
         const onLoadedMetadata = () => {
-          console.log("Video metadata loaded");
           video.removeEventListener('loadedmetadata', onLoadedMetadata);
-          video.removeEventListener('error', onError);
           clearTimeout(timeoutId);
           resolve();
         };
 
         const onError = (e) => {
-          console.error("Video error event:", e);
+          console.error("Video stream error:", e);
           video.removeEventListener('loadedmetadata', onLoadedMetadata);
-          video.removeEventListener('error', onError);
           clearTimeout(timeoutId);
           reject(new Error("Failed to load video stream"));
         };
 
         const timeoutId = setTimeout(() => {
-          console.error("Camera timeout - video never loaded metadata");
           video.removeEventListener('loadedmetadata', onLoadedMetadata);
           video.removeEventListener('error', onError);
           reject(new Error("Camera timeout - metadata never loaded"));
@@ -132,27 +111,55 @@ export default function CameraCapture({ onResult, modelsReady }) {
         video.addEventListener('error', onError, { once: true });
       });
 
-      // Try to play
+      // Play video
       if (videoRef.current) {
+        console.log("Video element before play:", {
+          srcObject: !!videoRef.current.srcObject,
+          videoWidth: videoRef.current.videoWidth,
+          videoHeight: videoRef.current.videoHeight,
+          readyState: videoRef.current.readyState
+        });
+        
+        // Force video to be visible for debugging
+        videoRef.current.style.display = 'block';
+        videoRef.current.style.visibility = 'visible';
+        
         await videoRef.current.play();
-        console.log("Video playing successfully");
+        
+        console.log("Video element after play:", {
+          videoWidth: videoRef.current.videoWidth,
+          videoHeight: videoRef.current.videoHeight,
+          currentTime: videoRef.current.currentTime,
+          paused: videoRef.current.paused,
+          srcObject: !!videoRef.current.srcObject
+        });
+        
+        // Add a small delay to ensure video is actually playing
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Check if video is actually playing
+        if (videoRef.current.paused) {
+          console.warn("Video is still paused after play() call");
+        } else {
+          console.log("Video is playing successfully");
+        }
+        
+        setStreamStarted(true);
+        setCameraStatus("Camera active");
+        setError(null);
+        console.log("✅ Camera ready");
       }
 
-      setStreamStarted(true);
-      setCameraStatus("Camera active");
-      setError(null);
-
     } catch (err) {
-      console.error("Camera error:", err);
+      console.error("❌ Camera error:", err);
       
       let userMessage = "Camera failed: ";
-      
       if (err.name === "NotAllowedError") {
-        userMessage += "Permission denied. Allow camera access in your browser settings.";
+        userMessage += "Permission denied. Allow camera access in browser settings.";
       } else if (err.name === "NotFoundError") {
         userMessage += "No camera found on this device.";
       } else if (err.name === "NotReadableError") {
-        userMessage += "Camera is in use by another application.";
+        userMessage += "Camera is in use by another app.";
       } else {
         userMessage += err.message;
       }
@@ -173,43 +180,23 @@ export default function CameraCapture({ onResult, modelsReady }) {
     setCameraStatus("Processing image...");
 
     try {
-      console.log("🔍 Starting image processing...");
+      console.log("🔍 Processing image...");
 
-      const depthEstimator = await getDepthEstimator().catch(err => {
-        console.error("Depth estimator error:", err);
-        throw new Error("Failed to load depth estimation model");
-      });
+      const depthEstimator = await getDepthEstimator();
+      const classification = await classifyFragment(imgElement);
+      const depthTensor = await depthEstimator.estimateDepth(imgElement);
 
-      const [classification, depthTensor] = await Promise.all([
-        classifyFragment(imgElement).catch(err => {
-          console.error("Classification error:", err);
-          return {
-            fragmentType: "unknown",
-            confidence: 0,
-            probabilities: { rim: 0, body: 0, base: 0 },
-            symmetry: "unknown",
-            curvature: "unknown"
-          };
-        }),
-        depthEstimator.estimateDepth(imgElement).catch(err => {
-          console.error("Depth estimation error:", err);
-          throw new Error("Failed to estimate depth");
-        })
-      ]);
-
-      console.log("✅ Classification result:", classification);
-      console.log("✅ Depth map computed:", depthTensor.shape);
+      console.log("✅ Classification:", classification);
 
       let pointCloud = [];
       try {
         pointCloud = depthEstimator.depthToPointCloud(depthTensor);
-        console.log("✅ Point cloud generated:", pointCloud.length, "points");
+        console.log(`✅ Point cloud: ${pointCloud.length} points`);
       } catch (err) {
-        console.error("Point cloud generation error:", err);
-        pointCloud = [];
+        console.error("Point cloud error:", err);
       }
 
-      const dataUrl = imgElement.src || (canvasRef.current?.toDataURL("image/jpeg", 0.95) || '');
+      const dataUrl = imgElement.src || canvasRef.current?.toDataURL("image/jpeg", 0.95) || '';
 
       onResult({
         image: dataUrl,
@@ -221,19 +208,18 @@ export default function CameraCapture({ onResult, modelsReady }) {
 
       depthTensor.dispose();
       setCameraStatus("Processing complete");
-      setProcessing(false);
 
     } catch (procErr) {
       console.error("❌ Processing error:", procErr);
       setError(`Processing failed: ${procErr.message}`);
-      setCameraStatus("Error during processing");
-      setProcessing(false);
       
       onResult({
         image: imgElement.src || '',
         error: procErr.message,
         timestamp: Date.now()
       });
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -241,7 +227,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
     const canvas = canvasRef.current;
     const video = videoRef.current;
 
-    if (!video || !video.videoWidth || !video.videoHeight) {
+    if (!video?.videoWidth || !video?.videoHeight) {
       setError("Video not ready - try restarting the camera");
       return;
     }
@@ -252,9 +238,8 @@ export default function CameraCapture({ onResult, modelsReady }) {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
     const img = new Image();
-    img.src = dataUrl;
+    img.src = canvas.toDataURL("image/jpeg", 0.95);
 
     img.onload = () => processImage(img);
     img.onerror = () => setError("Failed to load captured image");
@@ -282,7 +267,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
       const tracks = videoRef.current.srcObject.getTracks();
       tracks.forEach(track => {
         track.stop();
-        console.log("Stopped track:", track.label);
+        console.log("🛑 Stopped track:", track.label);
       });
       videoRef.current.srcObject = null;
       setStreamStarted(false);
@@ -301,7 +286,6 @@ export default function CameraCapture({ onResult, modelsReady }) {
         position: 'relative',
         touchAction: 'manipulation'
       }}
-      onTouchStart={isMobile ? toggleControls : undefined}
     >
       {/* Camera Preview Area */}
       <div style={{
@@ -314,12 +298,34 @@ export default function CameraCapture({ onResult, modelsReady }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        aspectRatio: isMobile && orientation.includes('portrait') ? '9/16' : '16/9',
+        aspectRatio: isMobile ? '9/16' : '16/9',
         maxHeight: isMobile ? '70vh' : 'none',
         margin: '0 auto',
         touchAction: 'none'
       }}>
-        {!streamStarted ? (
+        {/* Video Element - positioned inside preview area */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: streamStarted ? 1 : 0,
+            borderRadius: '8px',
+            backgroundColor: '#000',
+            zIndex: 1,
+            transform: 'scaleX(-1)', // Mirror the video for better UX
+            transition: 'opacity 0.3s ease'
+          }}
+        />
+
+        {!streamStarted && !error ? (
           <div style={{
             position: 'absolute',
             inset: 0,
@@ -333,40 +339,51 @@ export default function CameraCapture({ onResult, modelsReady }) {
             gap: '1rem'
           }}>
             <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>
-              {error ? 'Camera Error' : 'Camera is off'}
+              Camera is off
             </div>
-            {error && (
-              <div style={{ 
-                color: '#ff6b6b',
-                backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                padding: '0.75rem',
-                borderRadius: '6px',
-                fontSize: '0.9rem',
-                maxWidth: '100%',
-                wordBreak: 'break-word',
-                lineHeight: 1.4
-              }}>
-                {error}
-              </div>
-            )}
+          </div>
+        ) : error ? (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#888',
+            padding: '1.5rem',
+            textAlign: 'center',
+            gap: '1rem'
+          }}>
+            <div style={{ fontSize: '1.1rem', fontWeight: 500 }}>
+              Camera Error
+            </div>
+            <div style={{ 
+              color: '#ff6b6b',
+              backgroundColor: 'rgba(255, 0, 0, 0.1)',
+              padding: '0.75rem',
+              borderRadius: '6px',
+              fontSize: '0.9rem',
+              maxWidth: '100%',
+              wordBreak: 'break-word'
+            }}>
+              {error}
+            </div>
           </div>
         ) : (
           <>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
+            {/* Canvas for capturing (hidden) */}
+            <canvas
+              ref={canvasRef}
               style={{
+                position: 'absolute',
                 width: '100%',
                 height: '100%',
-                objectFit: 'cover',
-                transform: 'scaleX(-1)',
-                touchAction: 'none',
-                WebkitTapHighlightColor: 'transparent'
+                display: 'none'
               }}
             />
             
+            {/* Capture Button (Mobile) */}
             {isMobile && showControls && (
               <div 
                 onClick={captureFromCamera}
@@ -385,33 +402,28 @@ export default function CameraCapture({ onResult, modelsReady }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-                  transition: 'transform 0.1s, box-shadow 0.2s'
+                  zIndex: 10
                 }}
               >
                 <div style={{
                   width: '70%',
                   height: '70%',
                   borderRadius: '50%',
-                  backgroundColor: '#f44336',
-                  border: '2px solid rgba(255, 255, 255, 0.8)'
+                  backgroundColor: '#f44336'
                 }} />
               </div>
             )}
+
+            {/* Mirror effect overlay */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.05)',
+              borderRadius: '8px',
+              pointerEvents: 'none'
+            }} />
           </>
         )}
-        
-        <canvas
-          ref={canvasRef}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            display: 'none',
-            pointerEvents: 'none'
-          }}
-        />
       </div>
 
       {/* Controls Section */}
@@ -422,17 +434,14 @@ export default function CameraCapture({ onResult, modelsReady }) {
           gap: '0.75rem',
           transition: 'opacity 0.3s ease',
           opacity: isMobile && !showControls ? 0 : 1,
-          pointerEvents: isMobile && !showControls ? 'none' : 'auto',
-          padding: isMobile ? '0.5rem' : '0',
-          marginTop: isMobile ? 'auto' : '0.5rem'
+          pointerEvents: isMobile && !showControls ? 'none' : 'auto'
         }}
       >
         <div style={{
           display: 'flex',
           justifyContent: 'center',
           gap: '0.75rem',
-          flexWrap: 'wrap',
-          padding: isMobile ? '0.5rem' : '0'
+          flexWrap: 'wrap'
         }}>
           {!streamStarted ? (
             <button
@@ -447,17 +456,10 @@ export default function CameraCapture({ onResult, modelsReady }) {
                 cursor: modelsReady ? 'pointer' : 'not-allowed',
                 fontSize: isMobile ? '1rem' : '0.95rem',
                 fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s',
-                flex: isMobile ? '1 1 100%' : '0 0 auto',
-                justifyContent: 'center',
-                minHeight: '48px'
+                flex: isMobile ? '1 1 100%' : '0 0 auto'
               }}
             >
-              <span>Start Camera</span>
-              {!modelsReady && <span style={{ fontSize: '0.85em' }}>(Loading...)</span>}
+              📷 Start Camera
             </button>
           ) : (
             !isMobile && (
@@ -472,23 +474,10 @@ export default function CameraCapture({ onResult, modelsReady }) {
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '0.95rem',
-                  fontWeight: '500',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.2s',
-                  minWidth: '180px',
-                  justifyContent: 'center'
+                  fontWeight: '500'
                 }}
               >
-                {processing ? (
-                  <>
-                    <span className="spinner"></span>
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  'Capture Fragment'
-                )}
+                {processing ? '⏳ Processing...' : '📸 Capture'}
               </button>
             )
           )}
@@ -503,115 +492,68 @@ export default function CameraCapture({ onResult, modelsReady }) {
                 border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
-                fontSize: '0.95rem',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s',
-                minWidth: '140px',
-                justifyContent: 'center'
+                fontSize: '0.95rem'
               }}
             >
-              Stop Camera
+              🛑 Stop
             </button>
           )}
         </div>
 
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '0.75rem',
-          flexWrap: 'wrap',
-          padding: isMobile ? '0.5rem' : '0'
-        }}>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={processing}
+          style={{
+            padding: '0.65rem 1.25rem',
+            backgroundColor: '#555',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: isMobile ? '0.9rem' : '0.85rem',
+            flex: isMobile ? '1 1 100%' : '0 0 auto'
+          }}
+        >
+          📁 Upload Image
+        </button>
+        
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={captureFromFile}
+          style={{ display: 'none' }}
+        />
+
+        {isMobile && streamStarted && (
           <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={processing}
+            onClick={stopCamera}
             style={{
               padding: '0.65rem 1.25rem',
-              backgroundColor: '#555',
+              backgroundColor: '#f44336',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              fontSize: isMobile ? '0.9rem' : '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              opacity: processing ? 0.7 : 1,
-              transition: 'all 0.2s',
-              flex: isMobile ? '1 1 100%' : '0 0 auto',
-              justifyContent: 'center'
+              flex: '1 1 100%'
             }}
           >
-            <span>📁 Upload Image</span>
+            🛑 Stop Camera
           </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept="image/*"
-            onChange={captureFromFile}
-            style={{ display: 'none' }}
-            capture={isMobile ? 'environment' : undefined}
-          />
-          
-          {isMobile && streamStarted && (
-            <button
-              onClick={stopCamera}
-              style={{
-                padding: '0.65rem 1.25rem',
-                backgroundColor: '#f44336',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s',
-                flex: '1 1 100%',
-                justifyContent: 'center'
-              }}
-            >
-              <span>🛑 Stop Camera</span>
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Status Bar */}
       <div style={{
         textAlign: 'center',
         color: '#aaa',
-        fontSize: isMobile ? '0.8rem' : '0.85rem',
+        fontSize: '0.85rem',
         padding: '0.5rem',
-        minHeight: '1.5rem',
-        opacity: isMobile && !showControls ? 0.7 : 1,
-        transition: 'opacity 0.3s ease',
-        backgroundColor: isMobile ? 'rgba(0,0,0,0.2)' : 'transparent',
-        borderRadius: '4px',
-        marginTop: 'auto'
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        borderRadius: '4px'
       }}>
         {cameraStatus}
       </div>
-      
-      <style jsx="true">{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .spinner {
-          display: inline-block;
-          width: 16px;
-          height: 16px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          border-top-color: white;
-          animation: spin 1s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }
