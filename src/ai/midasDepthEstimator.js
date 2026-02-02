@@ -37,6 +37,8 @@ export class MiDaSDepthEstimator {
     this.model = model; // "dpt_hybrid" or "dpt_large"
     this.initialized = false;
     this.depthModel = null;
+    this.webglContext = null;
+    this.contextLostHandler = null;
   }
 
   async initialize() {
@@ -45,15 +47,71 @@ export class MiDaSDepthEstimator {
     try {
       console.log("🔄 Loading depth model...");
       
-      // Using our custom edge-based depth from depthEstimator
-      // For production, replace with actual MiDaS:
-      // this.depthModel = await createDepthEstimator({ quantized: true });
+      // Check WebGL context availability
+      if (!this.checkWebGLSupport()) {
+        console.warn("WebGL not available, falling back to CPU backend");
+        await tf.setBackend('cpu');
+      } else {
+        // Use WebGL backend with default settings
+        await tf.setBackend('webgl');
+      }
+      
+      // Set up context loss handling
+      this.setupContextLossHandling();
+      
+      // Initialize TensorFlow.js backend
+      await tf.ready();
+      console.log("TensorFlow.js backend:", tf.getBackend());
+      
+      // Test the backend with a simple operation
+      try {
+        const testTensor = tf.tensor2d([[1, 2], [3, 4]]);
+        testTensor.dispose();
+        console.log("Backend test passed");
+      } catch (testErr) {
+        console.warn("Backend test failed, switching to CPU:", testErr);
+        await tf.setBackend('cpu');
+        await tf.ready();
+        console.log("Switched to CPU backend");
+      }
       
       this.initialized = true;
       console.log("✅ Depth estimator initialized");
     } catch (err) {
       console.error("❌ Failed to initialize depth estimator:", err);
       throw err;
+    }
+  }
+
+  checkWebGLSupport() {
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      return !!gl;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  setupContextLossHandling() {
+    // Handle WebGL context loss
+    this.contextLostHandler = () => {
+      console.warn("WebGL context lost, reinitializing...");
+      this.initialized = false;
+      setTimeout(() => {
+        this.initialize().catch(err => {
+          console.error("Failed to reinitialize after context loss:", err);
+        });
+      }, 1000);
+    };
+
+    // Listen for context loss events
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      canvas.addEventListener('webglcontextlost', this.contextLostHandler);
+      canvas.addEventListener('webglcontextrestored', () => {
+        console.log("WebGL context restored");
+      });
     }
   }
 
@@ -66,40 +124,84 @@ export class MiDaSDepthEstimator {
       await this.initialize();
     }
 
-    return tf.tidy(() => {
-      // Convert image to tensor
-      const imgTensor = tf.browser.fromPixels(imgElement);
-      const normalized = imgTensor.div(255.0);
+    try {
+      return tf.tidy(() => {
+        // Check if image is valid
+        if (!imgElement || (!imgElement.complete && imgElement.readyState !== 4)) {
+          throw new Error("Invalid or incomplete image element");
+        }
 
-      // Resize to standard depth estimation size
-      const resized = tf.image.resizeBilinear(normalized, [384, 384]);
+        // Convert image to tensor with error handling
+        let imgTensor;
+        try {
+          imgTensor = tf.browser.fromPixels(imgElement);
+        } catch (err) {
+          console.error("Failed to convert image to tensor:", err);
+          throw new Error("Image to tensor conversion failed");
+        }
 
-      // Apply edge detection for better pottery segmentation
-      const edges = this.detectEdges(resized);
-      
-      // Apply morphological operations
-      const dilated = this.dilate(edges, 3);
-      const eroded = this.erode(dilated, 2);
+        // Validate tensor
+        if (imgTensor.shape.length < 3) {
+          throw new Error("Invalid image tensor shape");
+        }
 
-      // Combine with original image for better depth cues
-      const combined = tf.tidy(() => {
-        const original384 = tf.image.resizeBilinear(normalized, [384, 384]);
-        // Make eroded broadcast-compatible by expanding to 3 channels
-        const eroded3 = eroded.expandDims(-1).tile([1, 1, 3]); // [384,384,1] → [384,384,3]
-        return original384.mul(0.7).add(eroded3.mul(0.3));
+        const normalized = imgTensor.div(255.0);
+
+        // Resize to standard depth estimation size
+        const resized = tf.image.resizeBilinear(normalized, [384, 384]);
+
+        // Apply edge detection for better pottery segmentation
+        const edges = this.detectEdges(resized);
+        
+        // Apply morphological operations
+        const dilated = this.dilate(edges, 3);
+        const eroded = this.erode(dilated, 2);
+
+        // Combine with original image for better depth cues
+        const combined = tf.tidy(() => {
+          const original384 = tf.image.resizeBilinear(normalized, [384, 384]);
+          // Make eroded broadcast-compatible by expanding to 3 channels
+          const eroded3 = eroded.expandDims(-1).tile([1, 1, 3]); // [384,384,1] → [384,384,3]
+          return original384.mul(0.7).add(eroded3.mul(0.3));
+        });
+
+        // Compute depth using edge and shading cues
+        const depth = this.computeDepthMap(combined, eroded);
+
+        // Normalize to [0, 1]
+        const min = depth.min();
+        const max = depth.max();
+        const normalized_depth = depth
+          .sub(min)
+          .div(max.sub(min).add(1e-7));
+
+        return normalized_depth;
       });
+    } catch (err) {
+      console.error("Depth estimation failed:", err);
+      
+      // Return fallback depth map
+      console.warn("Using fallback depth estimation");
+      return this.createFallbackDepthMap(imgElement);
+    }
+  }
 
-      // Compute depth using edge and shading cues
-      const depth = this.computeDepthMap(combined, eroded);
-
-      // Normalize to [0, 1]
-      const min = depth.min();
-      const max = depth.max();
-      const normalized_depth = depth
-        .sub(min)
-        .div(max.sub(min).add(1e-7));
-
-      return normalized_depth;
+  createFallbackDepthMap(imgElement) {
+    return tf.tidy(() => {
+      // Create a simple gradient-based depth map as fallback
+      const width = 384;
+      const height = 384;
+      
+      // Create depth gradient from top to bottom
+      const depth = tf.tensor3d(Array(height).fill(null).map((_, y) => 
+        Array(width).fill(null).map((_, x) => [
+          (y / height) * 0.8 + 0.2, // Simple depth gradient
+          (y / height) * 0.8 + 0.2,
+          (y / height) * 0.8 + 0.2
+        ])
+      ));
+      
+      return depth.squeeze(-1);
     });
   }
 
@@ -344,7 +446,26 @@ export class MiDaSDepthEstimator {
     if (this.depthModel) {
       this.depthModel.dispose?.();
     }
+    
+    // Remove context loss event listeners
+    if (this.contextLostHandler) {
+      const canvas = document.querySelector('canvas');
+      if (canvas) {
+        canvas.removeEventListener('webglcontextlost', this.contextLostHandler);
+      }
+      this.contextLostHandler = null;
+    }
+    
+    // Clear WebGL context
+    this.webglContext = null;
     this.initialized = false;
+    
+    // Dispose TensorFlow.js backend resources
+    try {
+      tf.disposeVariables();
+    } catch (err) {
+      console.warn("Failed to dispose TensorFlow variables:", err);
+    }
   }
 }
 

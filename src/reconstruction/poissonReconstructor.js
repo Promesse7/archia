@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { MeshBVH, acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
-import { PoissonDiskSampling } from 'poisson-disk-sampling';
 
 // Extend THREE with BVH
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
@@ -268,38 +267,55 @@ export class PoissonReconstructor {
   }
 
   /**
-   * Perform Poisson disk sampling for uniform point distribution
+   * Perform simplified uniform sampling for point distribution
    */
   performPoissonSampling(points) {
     if (points.length === 0) return [];
     
-    // Create sampling domain
+    // Calculate bounds
     const bounds = this.calculateBounds(points);
-    const sampler = new PoissonDiskSampling({
-      dimension: 3,
-      minDistance: this.options.minDistance,
-      maxDistance: this.options.maxDistance,
-      samplesPerPoint: this.options.samplesPerPoint,
-      bounds: [
-        [bounds.min.x, bounds.max.x],
-        [bounds.min.y, bounds.max.y],
-        [bounds.min.z, bounds.max.z]
-      ]
+    
+    // Simple grid-based sampling instead of Poisson disk
+    const gridSize = this.options.minDistance;
+    const grid = {};
+    const sampledPoints = [];
+    
+    // Create spatial grid
+    points.forEach(point => {
+      const gridX = Math.floor(point.x / gridSize);
+      const gridY = Math.floor(point.y / gridSize);
+      const gridZ = Math.floor(point.z / gridSize);
+      const key = `${gridX},${gridY},${gridZ}`;
+      
+      if (!grid[key]) {
+        grid[key] = [];
+      }
+      grid[key].push(point);
     });
     
-    // Sample points
-    const sampledPoints = [];
-    const samplePositions = sampler.sample();
-    
-    // Map sampled positions back to original points
-    samplePositions.forEach(pos => {
-      const nearestPoint = this.findNearestPoint(points, pos);
-      if (nearestPoint) {
-        sampledPoints.push(nearestPoint);
+    // Sample one point per grid cell (closest to center)
+    Object.keys(grid).forEach(key => {
+      if (grid[key].length > 0) {
+        const cellPoints = grid[key];
+        const center = this.calculateCenter(cellPoints);
+        
+        // Find point closest to cell center
+        let closestPoint = cellPoints[0];
+        let minDistance = this.distance(cellPoints[0], center);
+        
+        for (let i = 1; i < cellPoints.length; i++) {
+          const dist = this.distance(cellPoints[i], center);
+          if (dist < minDistance) {
+            minDistance = dist;
+            closestPoint = cellPoints[i];
+          }
+        }
+        
+        sampledPoints.push(closestPoint);
       }
     });
     
-    console.log('Poisson Sampling:', {
+    console.log('Grid-based Sampling:', {
       original: points.length,
       sampled: sampledPoints.length,
       reduction: ((points.length - sampledPoints.length) / points.length * 100).toFixed(1) + '%'
