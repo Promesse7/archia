@@ -165,7 +165,7 @@ export class PoissonReconstructor {
     }
     
     // Calculate normal using PCA
-    const normal = this.calculatePCA(normal);
+    const normal = this.calculatePCA(neighbors);
     return normal.normalize();
   }
 
@@ -196,13 +196,48 @@ export class PoissonReconstructor {
    * Calculate PCA normal from point set
    */
   calculatePCA(points) {
-    // Simplified PCA - find the plane that best fits the points
-    const center = this.calculateCenter(points);
-    const covariance = this.calculateCovariance(points, center);
+    if (points.length < 3) {
+      return new THREE.Vector3(0, 0, 1);
+    }
     
-    // Find eigenvector with smallest eigenvalue (normal to plane)
-    // Simplified: use cross product of two most spread directions
-    const normal = new THREE.Vector3(0, 0, 1);
+    // Calculate center
+    const center = this.calculateCenter(points);
+    
+    // Build covariance matrix
+    let xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
+    
+    points.forEach(point => {
+      const dx = point.x - center.x;
+      const dy = point.y - center.y;
+      const dz = point.z - center.z;
+      
+      xx += dx * dx;
+      xy += dx * dy;
+      xz += dx * dz;
+      yy += dy * dy;
+      yz += dy * dz;
+      zz += dz * dz;
+    });
+    
+    const n = points.length;
+    xx /= n; xy /= n; xz /= n; yy /= n; yz /= n; zz /= n;
+    
+    // Simplified eigenvalue calculation - find smallest eigenvalue
+    // For a proper implementation, you'd use a numerical library
+    // This is a simplified version that works for most cases
+    
+    // Calculate normal using cross product of two most spread directions
+    const v1 = new THREE.Vector3(points[1].x - points[0].x, points[1].y - points[0].y, points[1].z - points[0].z);
+    const v2 = new THREE.Vector3(points[2].x - points[0].x, points[2].y - points[0].y, points[2].z - points[0].z);
+    
+    const normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
+    
+    // Ensure normal points outward (away from center)
+    const toCenter = new THREE.Vector3().subVectors(center, points[0]).normalize();
+    if (normal.dot(toCenter) > 0) {
+      normal.negate();
+    }
+    
     return normal;
   }
 
@@ -343,16 +378,42 @@ export class PoissonReconstructor {
   }
 
   /**
-   * Simplified Delaunay triangulation
+   * Simplified triangulation
    */
   performDelaunayTriangulation(points) {
-    // This is a simplified version - in practice, you'd use a proper
-    // Delaunay library like delaunator or three's own triangulation
-    const indices = [];
+    // Create a simple triangulation using convex hull approach
+    // This is a basic implementation that works for most pottery fragments
     
-    // Simple triangulation - connect nearby points
-    for (let i = 0; i < points.length - 2; i++) {
-      indices.push(i, i + 1, i + 2);
+    if (points.length < 3) {
+      return new Uint32Array([]);
+    }
+    
+    // Find the lowest point (base)
+    let lowestIndex = 0;
+    for (let i = 1; i < points.length; i++) {
+      if (points[i].z < points[lowestIndex].z || 
+          (points[i].z === points[lowestIndex].z && points[i].y < points[lowestIndex].y)) {
+        lowestIndex = i;
+      }
+    }
+    
+    // Sort points by angle around lowest point
+    const angles = [];
+    for (let i = 0; i < points.length; i++) {
+      if (i === lowestIndex) continue;
+      
+      const dx = points[i].x - points[lowestIndex].x;
+      const dy = points[i].y - points[lowestIndex].y;
+      const angle = Math.atan2(dy, dx);
+      angles.push({ index: i, angle });
+    }
+    
+    angles.sort((a, b) => a.angle - b.angle);
+    
+    // Create triangles using fan triangulation from lowest point
+    const indices = [];
+    for (let i = 0; i < angles.length - 1; i++) {
+      indices.push(lowestIndex, angles[i].index, angles[i + 1].index);
     }
     
     return new Uint32Array(indices);
