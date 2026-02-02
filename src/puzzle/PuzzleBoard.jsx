@@ -216,6 +216,8 @@ export default function PuzzleBoard({
             piece={piece}
             image={imgRef.current}
             onUpdate={updatePiece}
+            allPieces={pieces}
+            snapThreshold={15}
           />
         ))}
         

@@ -1,17 +1,30 @@
 import { useRef, useEffect, useState } from "react";
+import { canSnapTogether, calculateSnapPosition, mergePieces } from "./puzzleUtils";
+import JigsawGenerator from "./jigsawGenerator";
 
-export default function PuzzlePiece({ piece, image, onUpdate, snapThreshold = 20 }) {
+export default function PuzzlePiece({ piece, image, onUpdate, snapThreshold = 15, allPieces }) {
   const canvasRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isSnapping, setIsSnapping] = useState(false);
 
-  // Draw the piece on the canvas
+  // Draw the jigsaw-shaped piece on the canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !image) return;
+    if (!canvas || !image || !piece.shape) return;
 
     const ctx = canvas.getContext("2d");
+    
+    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Save the current context state
+    ctx.save();
+    
+    // Create clipping path for jigsaw shape
+    const generator = new JigsawGenerator();
+    generator.createCanvasPath(ctx, piece.shape);
+    ctx.clip();
 
     // Draw the piece from the source image
     ctx.drawImage(
@@ -26,79 +39,161 @@ export default function PuzzlePiece({ piece, image, onUpdate, snapThreshold = 20
       piece.height
     );
 
-    // Add a subtle border if not placed
+    // Restore the context state (removes clipping)
+    ctx.restore();
+    
+    // Draw the border on top
+    generator.createCanvasPath(ctx, piece.shape);
+    
     if (!piece.placed) {
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.strokeStyle = isSnapping ? "#4ade80" : "rgba(255, 255, 255, 0.3)";
+      ctx.lineWidth = isSnapping ? 3 : 2;
+    } else {
+      ctx.strokeStyle = "#22c55e";
       ctx.lineWidth = 2;
-      ctx.strokeRect(0, 0, piece.width, piece.height);
     }
-  }, [image, piece]);
+    
+    ctx.stroke();
+  }, [image, piece, isSnapping]);
 
   const handleMouseDown = (e) => {
     if (piece.placed) return;
     
     const rect = canvasRef.current.getBoundingClientRect();
     setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      x: e.clientX - rect.left - piece.currentX,
+      y: e.clientY - rect.top - piece.currentY
     });
     setIsDragging(true);
+    setIsSnapping(false);
   };
 
   const handleMouseMove = (e) => {
     if (!isDragging || piece.placed) return;
 
-    const parent = canvasRef.current.parentElement;
-    const parentRect = parent.getBoundingClientRect();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const newX = e.clientX - rect.left - dragOffset.x;
+    const newY = e.clientY - rect.top - dragOffset.y;
 
-    const newX = e.clientX - parentRect.left - dragOffset.x;
-    const newY = e.clientY - parentRect.top - dragOffset.y;
+    // Check for magnetic snapping with nearby pieces
+    let snappedPosition = { x: newX, y: newY };
+    let shouldSnap = false;
 
-    onUpdate(piece.id, newX, newY, false);
+    allPieces.forEach(otherPiece => {
+      if (otherPiece.id === piece.id || otherPiece.placed) return;
+
+      // Temporarily update position to check snap
+      const originalX = piece.currentX;
+      const originalY = piece.currentY;
+      piece.currentX = newX;
+      piece.currentY = newY;
+
+      if (canSnapTogether(piece, otherPiece, snapThreshold)) {
+        const snapPos = calculateSnapPosition(piece, otherPiece);
+        snappedPosition = snapPos;
+        shouldSnap = true;
+        
+        // Visual feedback for snapping
+        setIsSnapping(true);
+      }
+
+      // Restore original position
+      piece.currentX = originalX;
+      piece.currentY = originalY;
+    });
+
+    if (!shouldSnap) {
+      setIsSnapping(false);
+    }
+
+    // Update piece position
+    const updatedPiece = {
+      ...piece,
+      currentX: snappedPosition.x,
+      currentY: snappedPosition.y
+    };
+
+    onUpdate(updatedPiece);
   };
 
   const handleMouseUp = () => {
-    if (!isDragging) return;
+    if (!isDragging || piece.placed) return;
+
     setIsDragging(false);
 
-    // Check if close to correct position
-    const dx = Math.abs(piece.currentX - piece.correctX);
-    const dy = Math.abs(piece.currentY - piece.correctY);
+    // Check for final snap and merge pieces
+    let snappedWithPiece = null;
 
-    if (dx < snapThreshold && dy < snapThreshold) {
-      // Snap to correct position
-      onUpdate(piece.id, piece.correctX, piece.correctY, true);
+    allPieces.forEach(otherPiece => {
+      if (otherPiece.id === piece.id || otherPiece.placed) return;
+
+      if (canSnapTogether(piece, otherPiece, snapThreshold)) {
+        const snapPos = calculateSnapPosition(piece, otherPiece);
+        
+        // Snap to position
+        piece.currentX = snapPos.x;
+        piece.currentY = snapPos.y;
+        
+        snappedWithPiece = otherPiece;
+      }
+    });
+
+    if (snappedWithPiece) {
+      // Merge pieces into a group
+      mergePieces(piece, snappedWithPiece, allPieces);
+      
+      // Check if piece is now in correct position
+      const isCorrectPosition = 
+        Math.abs(piece.currentX - piece.correctX) < 5 &&
+        Math.abs(piece.currentY - piece.correctY) < 5;
+
+      if (isCorrectPosition) {
+        piece.currentX = piece.correctX;
+        piece.currentY = piece.correctY;
+        piece.placed = true;
+      }
+
+      onUpdate(piece);
+    } else {
+      // Check if piece is close to correct position for auto-placement
+      const isCorrectPosition = 
+        Math.abs(piece.currentX - piece.correctX) < 20 &&
+        Math.abs(piece.currentY - piece.correctY) < 20;
+
+      if (isCorrectPosition) {
+        piece.currentX = piece.correctX;
+        piece.currentY = piece.correctY;
+        piece.placed = true;
+        onUpdate(piece);
+      }
     }
+
+    setIsSnapping(false);
   };
 
+  // Handle touch events for mobile
   const handleTouchStart = (e) => {
-    if (piece.placed) return;
     e.preventDefault();
-    
     const touch = e.touches[0];
-    const rect = canvasRef.current.getBoundingClientRect();
-    setDragOffset({
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top
+    const mouseEvent = new MouseEvent('mousedown', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
     });
-    setIsDragging(true);
+    handleMouseDown(mouseEvent);
   };
 
   const handleTouchMove = (e) => {
-    if (!isDragging || piece.placed) return;
     e.preventDefault();
-
     const touch = e.touches[0];
-    const parent = canvasRef.current.parentElement;
-    const parentRect = parent.getBoundingClientRect();
-
-    const newX = touch.clientX - parentRect.left - dragOffset.x;
-    const newY = touch.clientY - parentRect.top - dragOffset.y;
-
-    onUpdate(piece.id, newX, newY, false);
+    const mouseEvent = new MouseEvent('mousemove', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    handleMouseMove(mouseEvent);
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
     handleMouseUp();
   };
 
@@ -109,13 +204,12 @@ export default function PuzzlePiece({ piece, image, onUpdate, snapThreshold = 20
       height={piece.height}
       style={{
         position: "absolute",
-        left: `${piece.currentX}px`,
-        top: `${piece.currentY}px`,
+        left: piece.currentX,
+        top: piece.currentY,
         cursor: piece.placed ? "default" : isDragging ? "grabbing" : "grab",
-        opacity: piece.placed ? 1 : 0.9,
-        transition: piece.placed ? "opacity 0.3s" : "none",
-        zIndex: isDragging ? 1000 : piece.placed ? 1 : 10,
-        touchAction: "none"
+        zIndex: isDragging ? 1000 : piece.groupId || 1,
+        transition: isSnapping ? "none" : "transform 0.1s",
+        transform: isSnapping ? "scale(1.05)" : "scale(1)"
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

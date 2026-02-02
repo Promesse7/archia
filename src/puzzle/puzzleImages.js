@@ -7,7 +7,7 @@ export const puzzleImages = [
   {
     id: 1,
     name: "Ancient Pottery",
-    src: "/puzzles/pottery_1.jpg",
+    src: "/puzzles/pottery_1.svg",
     difficulty: "easy",
     rows: 8,
     cols: 8,
@@ -16,7 +16,7 @@ export const puzzleImages = [
   {
     id: 2,
     name: "Archaeological Site",
-    src: "/puzzles/site_1.jpg",
+    src: "/puzzles/site_1.svg",
     difficulty: "medium",
     rows: 10,
     cols: 10,
@@ -25,7 +25,7 @@ export const puzzleImages = [
   {
     id: 3,
     name: "Ancient Artifacts",
-    src: "/puzzles/artifact_1.jpg",
+    src: "/puzzles/artifact_1.svg",
     difficulty: "medium",
     rows: 10,
     cols: 10,
@@ -34,7 +34,7 @@ export const puzzleImages = [
   {
     id: 4,
     name: "Pottery Sherds",
-    src: "/puzzles/pottery_2.jpg",
+    src: "/puzzles/pottery_2.svg",
     difficulty: "hard",
     rows: 12,
     cols: 12,
@@ -43,7 +43,7 @@ export const puzzleImages = [
   {
     id: 5,
     name: "Temple Ruins",
-    src: "/puzzles/site_2.jpg",
+    src: "/puzzles/site_2.svg",
     difficulty: "hard",
     rows: 12,
     cols: 12,

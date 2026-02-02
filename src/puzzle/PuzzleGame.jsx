@@ -2,8 +2,8 @@ import { useState } from "react";
 import PuzzleBoard from "./PuzzleBoard";
 import { puzzleImages, getPuzzlesByDifficulty } from "./puzzleImages";
 
-export default function PuzzleGame() {
-  const [selectedPuzzle, setSelectedPuzzle] = useState(null);
+export default function PuzzleGame({ initialPuzzle, onBack }) {
+  const [selectedPuzzle, setSelectedPuzzle] = useState(initialPuzzle || null);
   const [difficulty, setDifficulty] = useState("all");
   const [showCompletion, setShowCompletion] = useState(false);
 
@@ -15,6 +15,13 @@ export default function PuzzleGame() {
   const handleSelectPuzzle = (puzzle) => {
     setSelectedPuzzle(puzzle);
     setShowCompletion(false);
+  };
+
+  const handleBackToGallery = () => {
+    setSelectedPuzzle(null);
+    if (onBack) {
+      onBack();
+    }
   };
 
   const filteredPuzzles = difficulty === "all" 
@@ -55,7 +62,7 @@ export default function PuzzleGame() {
           </div>
           
           <button
-            onClick={() => setSelectedPuzzle(null)}
+            onClick={handleBackToGallery}
             style={{
               padding: '10px 20px',
               backgroundColor: '#757575',

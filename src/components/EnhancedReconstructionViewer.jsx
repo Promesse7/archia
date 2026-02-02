@@ -8,7 +8,7 @@ export default function EnhancedReconstructionViewer({
   showPointCloud = true,
   showMesh = true,
   autoRotate = true,
-  mesh = null,
+  mesh = null, 
 }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
@@ -56,7 +56,7 @@ export default function EnhancedReconstructionViewer({
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
-
+ 
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(10, 10, 5);
     directionalLight.castShadow = true;
