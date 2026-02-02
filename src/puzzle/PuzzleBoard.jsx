@@ -15,6 +15,8 @@ export default function PuzzleBoard({
   const [draggedPiece, setDraggedPiece] = useState(null);
   const [touchStart, setTouchStart] = useState(null);
   const [imageError, setImageError] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ 
     width: cols * pieceSize, 
@@ -276,9 +278,19 @@ export default function PuzzleBoard({
     }
   }, [isCompleted, onComplete]);
 
+  // Calculate progress percentage
+  const calculateProgress = useCallback(() => {
+    if (pieces.length === 0) return 0;
+    const correctPieces = pieces.filter(piece => 
+      piece.currentPosition === piece.correctPosition
+    ).length;
+    return Math.round((correctPieces / pieces.length) * 100);
+  }, [pieces]);
+
   // Reset puzzle
   const resetPuzzle = useCallback(() => {
     setIsCompleted(false);
+    setShowHint(false);
     if (imageSrc) {
       const img = new Image();
       img.onload = () => {
@@ -287,6 +299,44 @@ export default function PuzzleBoard({
       img.src = imageSrc;
     }
   }, [imageSrc, initializePuzzle]);
+
+  // Resolve puzzle - auto-complete
+  const resolvePuzzle = useCallback(() => {
+    const resolvedPieces = pieces.map(piece => ({
+      ...piece,
+      currentPosition: piece.correctPosition,
+      x: (piece.correctPosition % cols) * pieceSize,
+      y: Math.floor(piece.correctPosition / cols) * pieceSize,
+      snapped: true
+    }));
+    
+    setPieces(resolvedPieces);
+    setShowHint(false);
+    
+    setTimeout(() => {
+      setIsCompleted(true);
+      onComplete();
+    }, 500);
+  }, [pieces, cols, pieceSize, onComplete]);
+
+  // Show hint
+  const toggleHint = useCallback(() => {
+    setShowHint(!showHint);
+    setTimeout(() => {
+      setShowHint(false);
+    }, 2000);
+  }, [showHint]);
+
+  // Toggle fullscreen
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, []);
 
   // Loading state
   if (loading) {
@@ -340,6 +390,8 @@ export default function PuzzleBoard({
   console.log('PuzzleBoard: Rendering puzzle with', pieces.length, 'pieces');
   console.log('PuzzleBoard: Container size:', containerSize);
 
+  const progress = calculateProgress();
+
   return (
     <div style={{ 
       display: 'flex', 
@@ -368,8 +420,108 @@ export default function PuzzleBoard({
         </p>
       </div>
 
+      {/* Progress Bar */}
+      <div style={{ 
+        width: '100%', 
+        maxWidth: '600px',
+        textAlign: 'center'
+      }}>
+        <div style={{
+          width: '100%',
+          height: '24px',
+          backgroundColor: '#e0e0e0',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          marginBottom: '8px',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{
+            width: `${progress}%`,
+            height: '100%',
+            backgroundColor: progress === 100 ? '#4caf50' : '#2196f3',
+            transition: 'width 0.5s ease',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}>
+            {progress > 10 && `${progress}%`}
+          </div>
+        </div>
+        <div style={{
+          fontSize: 'clamp(12px, 2vw, 14px)',
+          color: '#666',
+          fontWeight: '500'
+        }}>
+          {progress === 100 ? '🎉 Complete!' : `${progress}% Complete • ${pieces.filter(p => p.currentPosition === p.correctPosition).length} of ${pieces.length} pieces in place`}
+        </div>
+      </div>
+
       {/* Control Buttons */}
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <button
+          onClick={toggleHint}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#ff9800',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: 'clamp(12px, 2vw, 14px)',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+          onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+          onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+        >
+          💡 Hint
+        </button>
+        
+        <button
+          onClick={resolvePuzzle}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: 'clamp(12px, 2vw, 14px)',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+          onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+          onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+        >
+          ✅ Resolve
+        </button>
+        
+        <button
+          onClick={toggleFullscreen}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#9c27b0',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: 'clamp(12px, 2vw, 14px)',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+          onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+          onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+        >
+          {isFullscreen ? '🔲 Exit Fullscreen' : '🔳 Fullscreen'}
+        </button>
+        
         <button
           onClick={resetPuzzle}
           style={{
@@ -405,6 +557,24 @@ export default function PuzzleBoard({
           overflow: 'hidden'
         }}
       >
+        {/* Hint Overlay */}
+        {showHint && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: `url(${imageSrc})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.7,
+            zIndex: 100,
+            transition: 'opacity 0.3s ease',
+            borderRadius: '12px'
+          }} />
+        )}
+
         {/* Grid overlay */}
         {showGrid && (
           <div style={{
