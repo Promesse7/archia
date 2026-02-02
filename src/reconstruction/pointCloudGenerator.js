@@ -136,6 +136,16 @@ export class PointCloudGenerator {
    * Statistical outlier removal
    */
   static filterOutliers(points, k = 20, threshold = 2.0) {
+    if (!points || points.length === 0) {
+      console.warn("No points to filter for outliers");
+      return [];
+    }
+
+    if (points.length < 3) {
+      console.warn("Too few points for outlier filtering, returning as-is");
+      return points;
+    }
+
     const distances = [];
 
     // Compute mean distance to k nearest neighbors

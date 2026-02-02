@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { classifyFragment } from "../ai/classifier";
 import { getMiDaSDepthEstimator } from "../ai/midasDepthEstimator";
+import { Button, StatusPill } from "./ui";
 
 export default function CameraCapture({ onResult, modelsReady }) {
   const videoRef = useRef(null);
@@ -164,193 +165,94 @@ export default function CameraCapture({ onResult, modelsReady }) {
   };
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      height: "100%",
-      gap: "12px",
-      position: "relative"
-    }}>
+    <div className="flex flex-col h-full space-y-3 relative">
       {/* Preview */}
-      <div style={{
-        position: "relative",
-        flex: 1,
-        background: "#000",
-        borderRadius: "10px",
-        overflow: "hidden",
-        aspectRatio: isMobile ? "9/16" : "4/3",
-        maxHeight: isMobile ? "65vh" : "none",
-        margin: "0 auto",
-        width: "100%"
-      }}>
+      <div className="relative flex-1 bg-black rounded-xl overflow-hidden aspect-video lg:aspect-[4/3] max-h-[65vh] lg:max-h-none mx-auto w-full">
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            transform: "scaleX(-1)", // mirror — common for selfie-style UX
-            display: stream ? "block" : "none"
-          }}
+          className="w-full h-full object-cover transform scale-x-[-1]"
+          style={{ display: stream ? "block" : "none" }}
         />
 
         {!stream && !error && (
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            color: "#aaa",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            padding: "1rem"
-          }}>
+          <div className="absolute inset-0 flex items-center justify-center text-zinc-400 text-center p-4">
             Camera off — click "Start Camera"
           </div>
         )}
 
         {error && (
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            color: "#ff6b6b",
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1.5rem",
-            textAlign: "center"
-          }}>
-            <strong>Camera Error</strong>
-            <div style={{ marginTop: "8px" }}>{error}</div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-black/80">
+            <div className="text-red-500 font-semibold">Camera Error</div>
+            <div className="mt-2 text-sm text-zinc-300">{error}</div>
           </div>
         )}
 
-        <canvas ref={canvasRef} style={{ display: "none" }} />
+        <canvas ref={canvasRef} className="hidden" />
       </div>
 
       {/* Controls */}
-      <div style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "10px",
-        justifyContent: "center"
-      }}>
+      <div className="flex flex-wrap gap-3 justify-center">
         {!stream ? (
-          <button
+          <Button
             onClick={startCamera}
             disabled={!modelsReady || processing}
-            style={{
-              padding: "12px 24px",
-              background: modelsReady ? "#2e7d32" : "#555",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "1rem",
-              minWidth: "160px"
-            }}
+            className="min-w-[160px]"
           >
-            📷 Start Camera
-          </button>
+            Start Camera
+          </Button>
         ) : (
           <>
-            <button
+            <Button
               onClick={captureFromCamera}
-              disabled={processing || isMobile} // mobile uses overlay button
-              style={{
-                padding: "12px 24px",
-                background: processing ? "#666" : "#1976d2",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                minWidth: "160px"
-              }}
+              disabled={processing || isMobile}
+              variant="secondary"
+              className="min-w-[160px]"
             >
-              {processing ? "⏳ Processing…" : "📸 Capture"}
-            </button>
+              {processing ? "Processing…" : "Capture"}
+            </Button>
 
-            <button
+            <Button
               onClick={stopCamera}
-              style={{
-                padding: "12px 24px",
-                background: "#c62828",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                minWidth: "140px"
-              }}
+              variant="destructive"
+              className="min-w-[140px]"
             >
-              🛑 Stop
-            </button>
+              Stop
+            </Button>
           </>
         )}
 
-        <button
+        <Button
           onClick={() => fileInputRef.current?.click()}
           disabled={processing}
-          style={{
-            padding: "12px 20px",
-            background: "#424242",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "1rem"
-          }}
+          variant="outline"
         >
-          📁 Upload
-        </button>
+          Upload
+        </Button>
 
         <input
           type="file"
           ref={fileInputRef}
           accept="image/jpeg,image/png"
           onChange={captureFromFile}
-          style={{ display: "none" }}
+          className="hidden"
         />
       </div>
 
       {/* Status line */}
-      <div style={{
-        textAlign: "center",
-        color: "#bbb",
-        fontSize: "0.9rem",
-        padding: "6px",
-        background: "rgba(0,0,0,0.3)",
-        borderRadius: "6px"
-      }}>
-        {status}
+      <div className="text-center text-sm text-zinc-500 py-2 px-3 bg-zinc-100 rounded-lg">
+        <StatusPill status={status} />
       </div>
 
       {/* Floating capture button on mobile when camera is live */}
       {isMobile && stream && !processing && (
         <button
           onClick={captureFromCamera}
-          style={{
-            position: "absolute",
-            bottom: "24px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "72px",
-            height: "72px",
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.9)",
-            border: "5px solid #fff",
-            boxShadow: "0 6px 20px rgba(0,0,0,0.4)",
-            zIndex: 10
-          }}
+          className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-white/90 border-4 border-white shadow-lg z-10"
         >
-          <div style={{
-            width: "100%",
-            height: "100%",
-            borderRadius: "50%",
-            background: "#d32f2f"
-          }} />
+          <div className="w-full h-full rounded-full bg-red-600" />
         </button>
       )}
     </div>

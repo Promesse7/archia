@@ -4,12 +4,11 @@ import { ConvexHull } from 'three/examples/jsm/math/ConvexHull.js';
 import { PointCloudGenerator } from "../reconstruction/pointCloudGenerator";
 
 export default function EnhancedReconstructionViewer({
-  pointCloudData = null,
-  depthMap = null,
   classification = null,
   showPointCloud = true,
   showMesh = true,
   autoRotate = true,
+  mesh = null,
 }) {
   const containerRef = useRef(null);
   const sceneRef = useRef(null);
@@ -164,99 +163,52 @@ export default function EnhancedReconstructionViewer({
   }, [autoRotate]);
 
   // Update point cloud when data changes
-  useEffect(() => {
-    if (!pointCloudData || !sceneRef.current) return;
-
-    try {
-      // Remove old points
-      if (pointsRef.current) {
-        sceneRef.current.remove(pointsRef.current);
-        pointsRef.current.geometry.dispose();
-        pointsRef.current.material.dispose();
-      }
-
-      if (!showPointCloud) return;
-
-      // Create new point cloud
-      const geometry = PointCloudGenerator.pointsToGeometry(
-        pointCloudData
-      );
-      const points = PointCloudGenerator.geometryToPoints(geometry);
-      pointsRef.current = points;
-      sceneRef.current.add(points);
-
-      // Update stats
-      setStats({
-        points: pointCloudData.points.length,
-        type: "Point Cloud",
-      });
-    } catch (err) {
-      console.error("Failed to update point cloud:", err);
-      setError(err.message);
-    }
-  }, [pointCloudData, showPointCloud]);
 
   // Update mesh when data changes
 useEffect(() => {
-  if (!pointCloudData || !sceneRef.current || !showMesh) return;
+  if (!sceneRef.current || !showMesh) return;
 
-  try {
-    // Remove old mesh
-    if (meshRef.current) {
-      sceneRef.current.remove(meshRef.current);
-      meshRef.current.geometry?.dispose();
-      meshRef.current.material?.dispose();
-    }
-
-    // Add this import at the top of the file:
-    // import { ConvexHull } from 'three/examples/jsm/math/ConvexHull.js';
-
-    const hull = new ConvexHull();
-    const threePoints = pointCloudData.points.map(p => 
-      new THREE.Vector3(p.x, p.y, p.z)
-    );
-    hull.setFromPoints(threePoints);
-
-    const vertices = [];
-    hull.faces.forEach(face => {
-      const a = face.a;
-      const b = face.b;
-      const c = face.c;
-      vertices.push(
-        a.x, a.y, a.z,
-        b.x, b.y, b.z,
-        c.x, c.y, c.z
-      );
-    });
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(vertices, 3)
-    );
-
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xc2a070,
-      side: THREE.DoubleSide,
-      roughness: 0.7,
-      metalness: 0.1
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    sceneRef.current.add(mesh);
-    meshRef.current = mesh;
-
-    setStats({
-      vertices: vertices.length / 3,
-      faces: hull.faces.length,
-      type: "Convex Hull Mesh"
-    });
-  } catch (err) {
-    console.error("Failed to create mesh:", err);
+  // Remove old mesh
+  if (meshRef.current) {
+    sceneRef.current.remove(meshRef.current);
+    meshRef.current.geometry?.dispose();
+    meshRef.current.material?.dispose();
+    console.log("Removed old mesh from scene");
   }
-}, [pointCloudData, showMesh]);
+
+  if (!mesh) {
+    console.log("No mesh provided to render");
+    return;
+  }
+
+  console.log("Adding mesh to scene:", mesh);
+  console.log("Mesh geometry:", mesh.geometry);
+  console.log("Mesh material:", mesh.material);
+  
+  // Position and scale the mesh for visibility
+  mesh.position.set(0, 0, 0);  // Center the mesh
+  mesh.scale.set(0.5, 0.5, 0.5);  // Scale down if too large
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  
+  // Calculate bounding box for debugging
+  const box = new THREE.Box3().setFromObject(mesh);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  console.log("Mesh bounding box:", { size, center });
+  
+  sceneRef.current.add(mesh);
+  meshRef.current = mesh;
+
+  const geo = mesh.geometry;
+  setStats({
+    vertices: geo.attributes.position?.count || 0,
+    faces: geo.index ? geo.index.count / 3 : 0,
+    type: "Rebuilt Pottery Mesh"
+  });
+  
+  console.log("Mesh successfully added to scene");
+}, [mesh, showMesh]);
 
   return (
     <div
@@ -290,24 +242,23 @@ useEffect(() => {
         </div>
       )}
 
-      {!pointCloudData && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            color: "#666",
-            textAlign: "center",
-            pointerEvents: "none",
-          }}
-        >
-          <div style={{ fontSize: "1.2em", marginBottom: "10px" }}>
-            🎨 Capture fragments to begin
-          </div>
-          <div style={{ fontSize: "0.9em" }}>Point cloud will appear here</div>
-        </div>
-      )}
+{!mesh && (
+  <div
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      color: "#666",
+      textAlign: "center",
+      pointerEvents: "none",
+    }}
+  >
+    <div style={{ fontSize: "1.2em", marginBottom: "10px" }}>
+      🎨 Rebuild to show pottery
+    </div>
+  </div>
+)}
 
       {stats && (
         <div

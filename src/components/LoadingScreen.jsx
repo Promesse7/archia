@@ -1,172 +1,102 @@
 import React from 'react';
+import { Card, CardContent } from './ui';
 
 export default function LoadingScreen({ progress, stage, error }) {
   const percentage = Math.min(100, Math.max(0, progress));
   
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: "#1a1a1a",
-      color: "#fff",
-      fontFamily: "system-ui, sans-serif",
-      padding: "20px"
-    }}>
-      {/* Pottery Icon with Animation */}
-      <div style={{
-        fontSize: "5em",
-        marginBottom: "30px",
-        animation: "float 3s ease-in-out infinite"
-      }}>
-        🏺
-      </div>
-      
-      {/* Title */}
-      <h2 style={{ 
-        margin: "0 0 8px 0",
-        fontSize: "2em",
-        background: "linear-gradient(45deg, #c2a070, #8b6f47)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text"
-      }}>
-        Loading ARCHIA
-      </h2>
-      
-      {/* Stage Description */}
-      <p style={{ 
-        color: "#aaa", 
-        fontSize: "1em",
-        marginBottom: "30px",
-        textAlign: "center",
-        maxWidth: "500px",
-        minHeight: "24px"
-      }}>
-        {stage || "Initializing..."}
-      </p>
+    <div className="min-h-screen bg-zinc-50 text-zinc-900 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardContent className="p-8 text-center space-y-6">
+          {/* Pottery Icon with Animation */}
+          <div className="text-6xl animate-bounce">
+            🏺
+          </div>
+          
+          {/* Title */}
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+            Loading ARCHIA
+          </h2>
+          
+          {/* Stage Description */}
+          <p className="text-zinc-500 max-w-sm mx-auto min-h-[24px]">
+            {stage || "Initializing..."}
+          </p>
 
-      {/* Progress Bar Container */}
-      <div style={{
-        width: "400px",
-        maxWidth: "90vw",
-        height: "8px",
-        backgroundColor: "#333",
-        borderRadius: "4px",
-        overflow: "hidden",
-        marginBottom: "16px",
-        boxShadow: "inset 0 2px 4px rgba(0,0,0,0.3)"
-      }}>
-        {/* Progress Bar Fill */}
-        <div style={{
-          width: `${percentage}%`,
-          height: "100%",
-          background: error 
-            ? "linear-gradient(90deg, #ff6b6b, #ff4444)"
-            : "linear-gradient(90deg, #c2a070, #8b6f47)",
-          transition: "width 0.3s ease-out",
-          boxShadow: "0 0 10px rgba(194, 160, 112, 0.5)"
-        }} />
-      </div>
+          {/* Progress Bar Container */}
+          <div className="w-full h-2 bg-zinc-200 rounded-full overflow-hidden">
+            {/* Progress Bar Fill */}
+            <div 
+              className={`h-full transition-all duration-300 ease-out ${
+                error 
+                  ? "bg-gradient-to-r from-red-500 to-red-600" 
+                  : "bg-gradient-to-r from-amber-500 to-amber-600"
+              }`}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
 
-      {/* Percentage Display */}
-      <div style={{
-        fontSize: "1.5em",
-        fontWeight: "bold",
-        marginBottom: "20px",
-        color: error ? "#ff6b6b" : "#c2a070",
-        fontVariant: "tabular-nums"
-      }}>
-        {percentage.toFixed(0)}%
-      </div>
+          {/* Percentage Display */}
+          <div className={`text-2xl font-bold tabular-nums ${
+            error ? "text-red-600" : "text-amber-500"
+          }`}>
+            {percentage.toFixed(0)}%
+          </div>
 
-      {/* Error Message */}
-      {error && (
-        <div style={{
-          backgroundColor: "rgba(255, 107, 107, 0.1)",
-          border: "1px solid rgba(255, 107, 107, 0.3)",
-          borderRadius: "8px",
-          padding: "16px",
-          maxWidth: "500px",
-          marginTop: "20px",
-          color: "#ff6b6b"
-        }}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-left">
+              <strong>Error:</strong> {error}
+            </div>
+          )}
 
-      {/* Loading Stages Indicator */}
-      {!error && (
-        <div style={{
-          marginTop: "30px",
-          display: "flex",
-          gap: "12px",
-          alignItems: "center"
-        }}>
-          {['TensorFlow', 'Depth', 'MobileNet', 'Classifier'].map((label, idx) => {
-            const stageProgress = (percentage / 100) * 4;
-            const isComplete = stageProgress > idx + 1;
-            const isCurrent = stageProgress > idx && stageProgress <= idx + 1;
-            
-            return (
-              <div key={label} style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "8px"
-              }}>
-                <div style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  backgroundColor: isComplete ? "#c2a070" : isCurrent ? "#8b6f47" : "#333",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "1.2em",
-                  transition: "all 0.3s ease",
-                  transform: isCurrent ? "scale(1.1)" : "scale(1)",
-                  boxShadow: isCurrent ? "0 0 15px rgba(194, 160, 112, 0.6)" : "none"
-                }}>
-                  {isComplete ? "✓" : isCurrent ? "○" : "○"}
-                </div>
-                <div style={{
-                  fontSize: "0.7em",
-                  color: isComplete ? "#c2a070" : isCurrent ? "#aaa" : "#555",
-                  textAlign: "center",
-                  maxWidth: "60px"
-                }}>
-                  {label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+          {/* Loading Stages Indicator */}
+          {!error && (
+            <div className="flex justify-center items-center gap-3">
+              {['TensorFlow', 'Depth', 'MobileNet', 'Classifier'].map((label, idx) => {
+                const stageProgress = (percentage / 100) * 4;
+                const isComplete = stageProgress > idx + 1;
+                const isCurrent = stageProgress > idx && stageProgress <= idx + 1;
+                
+                return (
+                  <div key={label} className="flex flex-col items-center gap-2">
+                    <div className={`
+                      w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all duration-300
+                      ${isComplete 
+                        ? "bg-amber-500 text-white" 
+                        : isCurrent 
+                          ? "bg-amber-600 text-white scale-110 shadow-lg shadow-amber-500/50" 
+                          : "bg-zinc-200 text-zinc-500"
+                      }
+                    `}>
+                      {isComplete ? "✓" : "○"}
+                    </div>
+                    <div className={`
+                      text-xs text-center max-w-[60px]
+                      ${isComplete 
+                        ? "text-amber-500" 
+                        : isCurrent 
+                          ? "text-zinc-500" 
+                          : "text-zinc-400"
+                      }
+                    `}>
+                      {label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-      {/* Tips */}
-      {!error && percentage < 50 && (
-        <div style={{
-          marginTop: "40px",
-          color: "#666",
-          fontSize: "0.85em",
-          textAlign: "center",
-          maxWidth: "400px",
-          fontStyle: "italic"
-        }}>
-          💡 First load may take 30-60 seconds on slower connections.<br />
-          Subsequent loads will be instant (cached).
-        </div>
-      )}
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-15px); }
-        }
-      `}</style>
+          {/* Tips */}
+          {!error && percentage < 50 && (
+            <div className="text-zinc-400 text-sm text-center max-w-sm italic">
+              💡 First load may take 30-60 seconds on slower connections.<br />
+              Subsequent loads will be instant (cached).
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

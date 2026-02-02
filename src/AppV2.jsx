@@ -4,6 +4,22 @@ import EnhancedReconstructionViewer from "./components/EnhancedReconstructionVie
 import LoadingScreen from "./components/LoadingScreen";
 import { getEnhancedPipeline } from "./pipeline/enhancedPipeline";
 import { getPotteryReconstructor } from "./reconstruction/potteryRebuilder";
+import {
+  AppShell,
+  TopBar,
+  MainContent,
+  LeftPanel,
+  RightPanel,
+  ReconstructionSection,
+  GallerySection,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Button,
+  Badge,
+  SectionHeader
+} from "./components/ui";
 
 let pipelineStarted = false;
 
@@ -102,19 +118,28 @@ export default function App() {
 
   const reconstructPottery = (fragmentsList) => {
     try {
+      console.log("Starting reconstruction with fragments:", fragmentsList.length);
+      
       const reconstructor = getPotteryReconstructor();
       reconstructor.clear();
 
-      fragmentsList.forEach((fragment) => {
+      fragmentsList.forEach((fragment, index) => {
         if (fragment.pointCloud && fragment.pointCloud.length > 0) {
+          console.log(`Adding fragment ${index}: ${fragment.pointCloud.length} points, type: ${fragment.classification?.fragmentType}`);
           reconstructor.addFragment(fragment.pointCloud, {
             fragmentType: fragment.classification?.fragmentType,
             confidence: fragment.classification?.confidence,
           });
+        } else {
+          console.warn(`Fragment ${index} has no point cloud data`);
         }
       });
 
       const mesh = reconstructor.reconstruct();
+      console.log("Reconstruction complete, mesh:", mesh);
+      console.log("Mesh geometry:", mesh.geometry);
+      console.log("Mesh material:", mesh.material);
+      
       setReconstructedMesh(mesh);
 
       console.log("Reconstruction complete:", reconstructor.getStats());
@@ -141,394 +166,215 @@ export default function App() {
   }
 
   return (
-    <div
-      style={{
-        maxWidth: "1400px",
-        margin: "0 auto",
-        padding: "20px",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        backgroundColor: "#0f0f0f",
-        color: "#fff",
-        minHeight: "100vh",
-      }}
-    >
-      {/* Header */}
-      <header
-        style={{
-          textAlign: "center",
-          marginBottom: "32px",
-          paddingBottom: "16px",
-          borderBottom: "2px solid #333",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "2.8em",
-            margin: "0 0 8px 0",
-            background: "linear-gradient(135deg, #c2a070, #8b6f47)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            fontWeight: "800",
-            letterSpacing: "-1px",
-          }}
-        >
-          🏺 ARCHIA v2.0
-        </h1>
-        <p style={{ color: "#aaa", margin: 0, fontSize: "1.1em" }}>
-          AI-Powered Pottery Reconstruction with MiDaS Depth Estimation
-        </p>
-      </header>
+    <AppShell>
+      <TopBar>
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+            ARCHIA v2.0
+          </h1>
+          <p className="text-zinc-500">
+            AI-Powered Pottery Reconstruction with MiDaS Depth Estimation
+          </p>
+        </div>
+      </TopBar>
 
       {/* Processing Progress */}
       {processingProgress && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "rgba(0, 0, 0, 0.95)",
-            border: "2px solid #c2a070",
-            borderRadius: "12px",
-            padding: "32px",
-            textAlign: "center",
-            zIndex: 1000,
-            minWidth: "320px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.8)",
-          }}
-        >
-          <h3 style={{ marginTop: 0, color: "#c2a070" }}>
+        <div className="fixed inset-0 flex items-center justify-center bg-black/95 border-2 border-amber-500 rounded-xl p-8 text-center z-50 min-w-[320px] shadow-2xl">
+          <h3 className="mt-0 text-amber-500">
             {processingProgress.stage}
           </h3>
-          <div
-            style={{
-              width: "100%",
-              height: "8px",
-              backgroundColor: "#333",
-              borderRadius: "4px",
-              overflow: "hidden",
-              marginBottom: "12px",
-            }}
-          >
+          <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden mb-3">
             <div
-              style={{
-                width: `${processingProgress.percent}%`,
-                height: "100%",
-                background: "linear-gradient(90deg, #c2a070, #8b6f47)",
-                transition: "width 0.3s ease",
-              }}
+              className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
+              style={{ width: `${processingProgress.percent}%` }}
             />
           </div>
-          <div style={{ color: "#aaa" }}>
+          <div className="text-zinc-400">
             {processingProgress.percent.toFixed(0)}%
           </div>
         </div>
       )}
 
-      {/* Main Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "20px",
-          marginBottom: "24px",
-        }}
-      >
-        {/* Camera Capture */}
-        <div
-          style={{
-            border: "2px solid #333",
-            borderRadius: "12px",
-            overflow: "hidden",
-            backgroundColor: "#1a1a1a",
-          }}
-        >
-          <CameraCapture
-            onResult={handleCaptureResult}
-            modelsReady={modelsLoaded}
-          />
-        </div>
-
-        {/* Fragment Info */}
-        <div
-          style={{
-            border: "2px solid #333",
-            borderRadius: "12px",
-            padding: "20px",
-            backgroundColor: "#1a1a1a",
-          }}
-        >
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#c2a070" }}>
-            Latest Fragment
-          </h3>
-
-          {currentFragment ? (
-            <div>
-              <img
-                src={currentFragment.image}
-                alt="Captured fragment"
-                style={{
-                  width: "100%",
-                  borderRadius: "8px",
-                  marginBottom: "16px",
-                }}
+      <MainContent>
+        <LeftPanel>
+          <Card>
+            <CardHeader>
+              <CardTitle>Camera Capture</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CameraCapture
+                onResult={handleCaptureResult}
+                modelsReady={modelsLoaded}
               />
+            </CardContent>
+          </Card>
+        </LeftPanel>
 
-              <div style={{ display: "grid", gap: "8px" }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "8px",
-                  }}
-                >
-                  <div
-                    style={{
-                      backgroundColor: "#222",
-                      padding: "12px",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    <div style={{ color: "#aaa", fontSize: "0.85em" }}>Type</div>
-                    <div
-                      style={{
-                        color: getFragmentColor(
-                          currentFragment.classification?.fragmentType
-                        ),
-                        fontWeight: "bold",
-                        fontSize: "1.1em",
-                      }}
+        <RightPanel>
+          <Card>
+            <CardHeader>
+              <CardTitle>Latest Fragment</CardTitle>
+            </CardHeader>
+            <CardContent>
+
+              {currentFragment ? (
+                <div className="space-y-4">
+                  <img
+                    src={currentFragment.image}
+                    alt="Captured fragment"
+                    className="w-full rounded-lg"
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-zinc-800 p-3 rounded-lg">
+                      <div className="text-zinc-400 text-sm">Type</div>
+                      <div
+                        className="font-bold text-lg"
+                        style={{
+                          color: getFragmentColor(
+                            currentFragment.classification?.fragmentType
+                          ),
+                        }}
+                      >
+                        {currentFragment.classification?.fragmentType || "unknown"}
+                      </div>
+                    </div>
+
+                    <div className="bg-zinc-800 p-3 rounded-lg">
+                      <div className="text-zinc-400 text-sm">
+                        Confidence
+                      </div>
+                      <div className="font-bold text-lg">
+                        {(
+                          (currentFragment.classification?.confidence || 0) * 100
+                        ).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-zinc-800 p-3 rounded-lg">
+                    <div className="text-zinc-400 text-sm">
+                      Processing Time
+                    </div>
+                    <div className="font-bold">
+                      {currentFragment.processingTime?.toFixed(0) || 0}ms
+                    </div>
+                  </div>
+
+                  <div className="bg-zinc-800 p-3 rounded-lg">
+                    <div className="text-zinc-400 text-sm">
+                      Points
+                    </div>
+                    <div className="font-bold">
+                      {currentFragment.pointCloud?.length?.toLocaleString() || 0}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-zinc-500">
+                  No fragment captured yet
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </RightPanel>
+
+        <ReconstructionSection>
+          <Card>
+            <CardHeader>
+              <SectionHeader
+                title="3D Reconstruction"
+                description="View and interact with the reconstructed pottery"
+                actions={
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => reconstructPottery(fragments)}
+                      disabled={fragments.length === 0}
+                      variant="outline"
+                      size="sm"
                     >
-                      {currentFragment.classification?.fragmentType || "unknown"}
-                    </div>
+                      Rebuild
+                    </Button>
+
+                    <Button
+                      onClick={clearFragments}
+                      disabled={fragments.length === 0}
+                      variant="destructive"
+                      size="sm"
+                    >
+                      Clear
+                    </Button>
                   </div>
-
-                  <div
-                    style={{
-                      backgroundColor: "#222",
-                      padding: "12px",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    <div style={{ color: "#aaa", fontSize: "0.85em" }}>
-                      Confidence
-                    </div>
-                    <div style={{ fontWeight: "bold", fontSize: "1.1em" }}>
-                      {(
-                        (currentFragment.classification?.confidence || 0) * 100
-                      ).toFixed(1)}
-                      %
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    backgroundColor: "#222",
-                    padding: "12px",
-                    borderRadius: "6px",
-                  }}
-                >
-                  <div style={{ color: "#aaa", fontSize: "0.85em" }}>
-                    Processing Time
-                  </div>
-                  <div style={{ fontWeight: "bold" }}>
-                    {currentFragment.processingTime?.toFixed(0) || 0}ms
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    backgroundColor: "#222",
-                    padding: "12px",
-                    borderRadius: "6px",
-                  }}
-                >
-                  <div style={{ color: "#aaa", fontSize: "0.85em" }}>
-                    Points
-                  </div>
-                  <div style={{ fontWeight: "bold" }}>
-                    {currentFragment.pointCloud?.length?.toLocaleString() || 0}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                padding: "40px 20px",
-                textAlign: "center",
-                color: "#666",
-              }}
-            >
-              No fragment captured yet
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 3D Viewer */}
-      <div
-        style={{
-          border: "2px solid #333",
-          borderRadius: "12px",
-          padding: "20px",
-          backgroundColor: "#1a1a1a",
-          marginBottom: "24px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-          }}
-        >
-          <h3 style={{ margin: 0, color: "#c2a070" }}>3D Reconstruction</h3>
-
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={() => reconstructPottery(fragments)}
-              disabled={fragments.length === 0}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: fragments.length > 0 ? "#c2a070" : "#555",
-                color: "#000",
-                border: "none",
-                borderRadius: "6px",
-                cursor: fragments.length > 0 ? "pointer" : "not-allowed",
-                fontWeight: "bold",
-                fontSize: "0.9em",
-              }}
-            >
-              🔄 Rebuild
-            </button>
-
-            <button
-              onClick={clearFragments}
-              disabled={fragments.length === 0}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: fragments.length > 0 ? "#f44336" : "#555",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                cursor: fragments.length > 0 ? "pointer" : "not-allowed",
-                fontWeight: "bold",
-                fontSize: "0.9em",
-              }}
-            >
-              🗑 Clear
-            </button>
-          </div>
-        </div>
-
-        <div style={{ height: "500px", borderRadius: "8px" }}>
-          <EnhancedReconstructionViewer
-            pointCloudData={
-              currentFragment?.pointCloudData || null
-            }
-            depthMap={currentFragment?.depthMap || null}
-            classification={currentFragment?.classification || null}
-            showPointCloud={true}
-            showMesh={true}
-            autoRotate={true}
-          />
-        </div>
-      </div>
-
-      {/* Fragment Gallery */}
-      {fragments.length > 0 && (
-        <div
-          style={{
-            border: "2px solid #333",
-            borderRadius: "12px",
-            padding: "20px",
-            backgroundColor: "#1a1a1a",
-          }}
-        >
-          <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#c2a070" }}>
-            Fragment Gallery ({fragments.length})
-          </h3>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-              gap: "12px",
-            }}
-          >
-            {fragments.map((fragment, index) => (
-              <div
-                key={fragment.timestamp}
-                onClick={() => setCurrentFragment(fragment)}
-                style={{
-                  border: "2px solid #333",
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  transform: "scale(1)",
-                  opacity: 0.8,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "scale(1.05)";
-                  e.currentTarget.style.opacity = "1";
-                  e.currentTarget.style.borderColor = "#c2a070";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.opacity = "0.8";
-                  e.currentTarget.style.borderColor = "#333";
-                }}
-              >
-                <img
-                  src={fragment.image}
-                  alt={`Fragment ${index + 1}`}
-                  style={{ width: "100%", aspectRatio: "1" }}
+                }
+              />
+            </CardHeader>
+            <CardContent>
+              <div className="h-[500px] rounded-lg bg-zinc-950">
+                <EnhancedReconstructionViewer
+                  mesh={reconstructedMesh}
+                  classification={currentFragment?.classification || null}
+                  showPointCloud={false}
+                  showMesh={true}
+                  autoRotate={true}
                 />
-                <div
-                  style={{
-                    padding: "6px",
-                    backgroundColor: "#222",
-                    textAlign: "center",
-                    fontSize: "0.75em",
-                    color:
-                      getFragmentColor(
-                        fragment.classification?.fragmentType
-                      ) || "#aaa",
-                  }}
-                >
-                  {fragment.classification?.fragmentType || "?"}
-                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </CardContent>
+          </Card>
+        </ReconstructionSection>
 
-      {/* Footer */}
-      <footer
-        style={{
-          marginTop: "32px",
-          paddingTop: "16px",
-          borderTop: "1px solid #333",
-          textAlign: "center",
-          color: "#666",
-          fontSize: "0.9em",
-        }}
-      >
+        {fragments.length > 0 && (
+          <GallerySection>
+            <Card>
+              <CardHeader>
+                <SectionHeader
+                  title={`Fragment Gallery (${fragments.length})`}
+                  description="Click fragments to view details"
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {fragments.map((fragment, index) => (
+                    <div
+                      key={fragment.timestamp}
+                      onClick={() => setCurrentFragment(fragment)}
+                      className="border-2 border-zinc-700 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 transform scale-100 opacity-80 hover:scale-105 hover:opacity-100 hover:border-amber-500"
+                    >
+                      <img
+                        src={fragment.image}
+                        alt={`Fragment ${index + 1}`}
+                        className="w-full aspect-square"
+                      />
+                      <div
+                        className="p-2 bg-zinc-800 text-center text-xs"
+                        style={{
+                          color:
+                            getFragmentColor(
+                              fragment.classification?.fragmentType
+                            ) || "#aaa",
+                        }}
+                      >
+                        {fragment.classification?.fragmentType || "?"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </GallerySection>
+        )}
+      </MainContent>
+
+      <footer className="mt-12 py-6 border-t text-center text-zinc-500 text-sm">
         <p>
           Enhanced with MiDaS Depth Estimation | Powered by TensorFlow.js &
           Three.js
         </p>
-        <p style={{ fontSize: "0.85em", marginTop: "4px" }}>
+        <p className="text-xs mt-1">
           FIRST LEGO League Research Project
         </p>
       </footer>
-    </div>
+    </AppShell>
   );
 }
 

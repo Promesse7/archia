@@ -65,7 +65,7 @@ export class EnhancedPotteryPipeline {
         videoElement,
         depthTensor,
         {
-          downsample: 2,
+          downsample: 4,
           minDepth: 0.05,
           maxDepth: 1.0,
           scale: 10,

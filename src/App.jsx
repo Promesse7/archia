@@ -5,6 +5,22 @@ import LoadingScreen from "./components/LoadingScreen";
 import { getPotteryReconstructor } from "./reconstruction/potteryRebuilder";
 import { preloadModels } from "./ai/classifier";
 import { getDepthEstimator } from "./ai/depthEstimator";
+import {
+  AppShell,
+  TopBar,
+  MainContent,
+  LeftPanel,
+  RightPanel,
+  ReconstructionSection,
+  GallerySection,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Button,
+  Badge,
+  SectionHeader
+} from "./components/ui";
 
 // Prevent double-loading in React StrictMode
 let modelsStarted = false;
@@ -124,262 +140,189 @@ export default function App() {
 
   // Main app
   return (
-    <div style={{ 
-      maxWidth: "1200px", 
-      margin: "0 auto", 
-      padding: "20px",
-      fontFamily: "system-ui, sans-serif"
-    }}>
-      <header style={{ 
-        textAlign: "center", 
-        marginBottom: "32px",
-        borderBottom: "2px solid #444",
-        paddingBottom: "16px"
-      }}>
-        <h1 style={{ 
-          fontSize: "2.5em", 
-          margin: "0 0 8px 0",
-          background: "linear-gradient(45deg, #c2a070, #8b6f47)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text"
-        }}>
-          🏺 ARCHIA
-        </h1>
-        <p style={{ 
-          color: "#888", 
-          margin: 0,
-          fontSize: "1.1em"
-        }}>
-          AI-Powered Pottery Reconstruction
-        </p>
-      </header>
-
-      <div style={{ 
-        display: "grid", 
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        gap: "20px",
-        marginBottom: "24px"
-      }}>
-        {/* Camera Capture Section */}
-        <div>
-          <CameraCapture onResult={handleCaptureResult} modelsReady={modelsLoaded} />
+    <AppShell>
+      <TopBar>
+        <div className="text-center space-y-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+            ARCHIA
+          </h1>
+          <p className="text-zinc-500">
+            AI-Powered Pottery Reconstruction
+          </p>
         </div>
+      </TopBar>
 
-        {/* Current Fragment Info */}
-        <div style={{
-          border: "2px solid #444",
-          borderRadius: "8px",
-          padding: "16px",
-          backgroundColor: "#1a1a1a"
-        }}>
-          <h3 style={{ marginTop: 0 }}>Latest Fragment</h3>
+      <MainContent>
+        <LeftPanel>
+          <Card>
+            <CardHeader>
+              <CardTitle>Camera Capture</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CameraCapture onResult={handleCaptureResult} modelsReady={modelsLoaded} />
+            </CardContent>
+          </Card>
+        </LeftPanel>
+
+        <RightPanel>
+          <Card>
+            <CardHeader>
+              <CardTitle>Latest Fragment</CardTitle>
+            </CardHeader>
+            <CardContent>
           
-          {currentFragment ? (
-            <div>
-              <img 
-                src={currentFragment.image} 
-                alt="Captured fragment"
-                style={{ 
-                  width: "100%", 
-                  borderRadius: "4px",
-                  marginBottom: "12px"
-                }} 
+              {currentFragment ? (
+                <div className="space-y-4">
+                  <img 
+                    src={currentFragment.image} 
+                    alt="Captured fragment"
+                    className="w-full rounded-lg"
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-zinc-500">Type:</span>
+                      <div className="font-medium">
+                        <Badge variant={getFragmentVariant(currentFragment.classification?.fragmentType)}>
+                          {currentFragment.classification?.fragmentType || "unknown"}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <span className="text-zinc-500">Confidence:</span>
+                      <div className="font-medium">
+                        {(currentFragment.classification?.confidence * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <span className="text-zinc-500">Points:</span>
+                      <div className="font-medium">
+                        {currentFragment.pointCloud?.length || 0}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <span className="text-zinc-500">Symmetry:</span>
+                      <div className="font-medium">
+                        {currentFragment.classification?.symmetry || "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-zinc-500">
+                  No fragment captured yet
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </RightPanel>
+      </MainContent>
+
+      <ReconstructionSection>
+        <Card>
+          <CardHeader>
+            <SectionHeader
+              title="3D Reconstruction"
+              description="View and interact with the reconstructed pottery"
+              actions={
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={() => reconstructPottery(fragments)}
+                    disabled={fragments.length === 0}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Rebuild
+                  </Button>
+                  
+                  <Button
+                    onClick={clearFragments}
+                    disabled={fragments.length === 0}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Clear All
+                  </Button>
+                </div>
+              }
+            />
+          </CardHeader>
+          <CardContent>
+            <div className="h-[500px] rounded-lg bg-zinc-950 relative overflow-hidden">
+              <ReconstructionViewer 
+                mesh={reconstructedMesh} 
+                pointCloud={currentFragment?.pointCloud}
+                showPointCloud={false}
               />
               
-              <div style={{ 
-                display: "grid", 
-                gridTemplateColumns: "1fr 1fr",
-                gap: "8px",
-                fontSize: "0.9em"
-              }}>
-                <div>
-                  <strong>Type:</strong><br />
-                  <span style={{ 
-                    color: getFragmentColor(currentFragment.classification?.fragmentType)
-                  }}>
-                    {currentFragment.classification?.fragmentType || "unknown"}
-                  </span>
+              {fragments.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-zinc-500">
+                  <div className="text-center">
+                    <p>Capture fragments to begin reconstruction</p>
+                  </div>
                 </div>
-                
-                <div>
-                  <strong>Confidence:</strong><br />
-                  {(currentFragment.classification?.confidence * 100).toFixed(1)}%
-                </div>
-                
-                <div>
-                  <strong>Points:</strong><br />
-                  {currentFragment.pointCloud?.length || 0}
-                </div>
-                
-                <div>
-                  <strong>Symmetry:</strong><br />
-                  {currentFragment.classification?.symmetry || "N/A"}
-                </div>
-              </div>
+              )}
             </div>
-          ) : (
-            <div style={{
-              padding: "60px 20px",
-              textAlign: "center",
-              color: "#666"
-            }}>
-              No fragment captured yet
-            </div>
-          )}
-        </div>
-      </div>
+          </CardContent>
+        </Card>
+      </ReconstructionSection>
 
-      {/* 3D Reconstruction Viewer */}
-      <div style={{
-        border: "2px solid #444",
-        borderRadius: "8px",
-        padding: "16px",
-        backgroundColor: "#1a1a1a",
-        marginBottom: "24px"
-      }}>
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "12px"
-        }}>
-          <h3 style={{ margin: 0 }}>3D Reconstruction</h3>
-          
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={() => reconstructPottery(fragments)}
-              disabled={fragments.length === 0}
-              style={{
-                padding: "6px 12px",
-                fontSize: "0.9em",
-                opacity: fragments.length === 0 ? 0.5 : 1
-              }}
-            >
-              🔄 Rebuild
-            </button>
-            
-            <button
-              onClick={clearFragments}
-              disabled={fragments.length === 0}
-              style={{
-                padding: "6px 12px",
-                fontSize: "0.9em",
-                opacity: fragments.length === 0 ? 0.5 : 1
-              }}
-            >
-              🗑 Clear All
-            </button>
-          </div>
-        </div>
-        
-        <div style={{ 
-          height: "500px",
-          borderRadius: "4px",
-          backgroundColor: "#0a0a0a",
-          position: "relative"
-        }}>
-          <ReconstructionViewer 
-            mesh={reconstructedMesh} 
-            pointCloud={currentFragment?.pointCloud}
-            showPointCloud={false}
-          />
-          
-          {fragments.length === 0 && (
-            <div style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              color: "#666",
-              fontSize: "1.1em",
-              textAlign: "center",
-              pointerEvents: "none"
-            }}>
-              Capture fragments to begin reconstruction
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Fragment Gallery */}
       {fragments.length > 0 && (
-        <div style={{
-          border: "2px solid #444",
-          borderRadius: "8px",
-          padding: "16px",
-          backgroundColor: "#1a1a1a"
-        }}>
-          <h3 style={{ marginTop: 0 }}>
-            Fragment Gallery ({fragments.length})
-          </h3>
-          
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-            gap: "12px"
-          }}>
-            {fragments.map((fragment, index) => (
-              <div 
-                key={fragment.timestamp}
-                style={{
-                  border: "1px solid #444",
-                  borderRadius: "4px",
-                  padding: "8px",
-                  backgroundColor: "#222",
-                  cursor: "pointer",
-                  transition: "transform 0.2s",
-                }}
-                onClick={() => setCurrentFragment(fragment)}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.05)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
-              >
-                <img 
-                  src={fragment.image} 
-                  alt={`Fragment ${index + 1}`}
-                  style={{ 
-                    width: "100%", 
-                    borderRadius: "2px",
-                    marginBottom: "4px"
-                  }} 
-                />
-                <div style={{
-                  fontSize: "0.75em",
-                  textAlign: "center",
-                  color: getFragmentColor(fragment.classification?.fragmentType)
-                }}>
-                  {fragment.classification?.fragmentType}
-                </div>
+        <GallerySection>
+          <Card>
+            <CardHeader>
+              <SectionHeader
+                title={`Fragment Gallery (${fragments.length})`}
+                description="Click fragments to view details"
+              />
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {fragments.map((fragment, index) => (
+                  <div 
+                    key={fragment.timestamp}
+                    onClick={() => setCurrentFragment(fragment)}
+                    className="cursor-pointer rounded-lg border bg-card hover:bg-accent transition-colors p-2"
+                  >
+                    <img 
+                      src={fragment.image} 
+                      alt={`Fragment ${index + 1}`}
+                      className="w-full rounded mb-2"
+                    />
+                    <div className="text-center">
+                      <Badge variant={getFragmentVariant(fragment.classification?.fragmentType)} className="text-xs">
+                        {fragment.classification?.fragmentType}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </CardContent>
+          </Card>
+        </GallerySection>
       )}
 
-      {/* Footer */}
-      <footer style={{
-        marginTop: "32px",
-        paddingTop: "16px",
-        borderTop: "1px solid #444",
-        textAlign: "center",
-        color: "#666",
-        fontSize: "0.9em"
-      }}>
+      <footer className="mt-12 py-6 border-t text-center text-zinc-500 text-sm">
         <p>
-          Powered by TensorFlow.js, MobileNet & Three.js<br />
-          <small>FIRST LEGO League Research Project</small>
+          Powered by TensorFlow.js, MobileNet & Three.js
+        </p>
+        <p className="text-xs mt-1">
+          FIRST LEGO League Research Project
         </p>
       </footer>
-    </div>
+    </AppShell>
   );
 }
 
-function getFragmentColor(type) {
-  const colors = {
-    rim: "#4caf50",
-    body: "#2196f3",
-    base: "#ff9800",
-    unknown: "#666"
+function getFragmentVariant(type) {
+  const variants = {
+    rim: "success",
+    body: "info",
+    base: "warning",
+    unknown: "secondary"
   };
-  return colors[type] || colors.unknown;
+  return variants[type] || variants.unknown;
 }
