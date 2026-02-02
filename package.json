@@ -15,9 +15,11 @@
     "@tensorflow-models/mobilenet": "^2.1.1",
     "@tensorflow/tfjs": "^4.22.0",
     "lucide-react": "^0.562.0",
+    "poisson-disk-sampling": "^2.3.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "three-mesh-bvh": "^0.9.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -1,6 +1,7 @@
 import { getMiDaSDepthEstimator } from "../ai/midasDepthEstimator";
 import { getFragmentClassifier } from "../ai/classifier";
 import { PointCloudGenerator } from "../reconstruction/pointCloudGenerator";
+import { PoissonReconstructor } from "../reconstruction/poissonReconstructor";
 import * as tf from "@tensorflow/tfjs";
 
 /**
@@ -59,7 +60,11 @@ export class EnhancedPotteryPipeline {
       this._reportProgress("Classifying fragment...", 40);
       const classification = await this.classifier.classify(videoElement);
 
-      // Stage 2.5: Profile Analysis (NEW)
+      // Stage 2.5: CNN Vessel Parameter Prediction (NEW)
+      this._reportProgress("Predicting vessel parameters...", 50);
+      const vesselParams = await this.classifier.predictVesselParams(videoElement);
+
+      // Stage 2.6: Profile Analysis
       this._reportProgress("Analyzing profile curve...", 55);
       const depthArray = await depthTensor.array();
       const profile = await this.depthEstimator.extractProfileCurve(
@@ -103,6 +108,22 @@ export class EnhancedPotteryPipeline {
         }
       );
 
+      // Stage 3.5: Poisson Surface Reconstruction (NEW)
+      this._reportProgress("Performing Poisson reconstruction...", 80);
+      const poissonReconstructor = new PoissonReconstructor({
+        useCNNParams: true,
+        cnnWeight: 0.7,
+        samplesPerPoint: 1.5,
+        minDistance: 0.5,
+        maxDistance: 3.0
+      });
+      
+      const reconstructedMesh = poissonReconstructor.reconstructPointCloud(
+        pointCloudData.points,
+        vesselParams,
+        pointCloudData.normals
+      );
+
       this._reportProgress("Creating geometry...", 85);
 
       depthTensor.dispose();
@@ -115,6 +136,8 @@ export class EnhancedPotteryPipeline {
         pointCount: pointCloudData.count,
         depthMap: depthArray,
         normals: pointCloudData.normals,
+        vesselParams, // NEW: CNN-predicted vessel parameters
+        reconstructedMesh, // NEW: Poisson reconstructed mesh
         profileAnalysis: {
           profile,
           segments,
@@ -288,6 +311,45 @@ export class EnhancedPotteryPipeline {
     });
 
     return segments;
+  }
+
+  generateGuidedLathePoints(params, pointCloud) {
+    const points = [];
+    const steps = 100;
+    
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      let radius = params.baseWidth + 
+                   (params.maxDiameter - params.baseWidth) * Math.sin(t * Math.PI) +
+                   params.rimRadius * (t > 0.8 ? (t - 0.8) * 5 : 0);
+      
+      // Blend with real point cloud average radius at this height
+      const realRadius = this.averageRadiusAtHeight(pointCloud, t * params.height);
+      radius = 0.6 * radius + 0.4 * realRadius;
+      
+      points.push({ x: radius, y: t * params.height });
+    }
+    
+    console.log('Generated Guided Lathe Points:', {
+      totalPoints: points.length,
+      maxHeight: params.height,
+      maxRadius: Math.max(...points.map(p => p.x))
+    });
+    
+    return points;
+  }
+
+  averageRadiusAtHeight(pointCloud, targetHeight) {
+    if (!pointCloud || pointCloud.length === 0) return 5.0;
+    
+    const nearbyPoints = pointCloud.filter(point => 
+      Math.abs(point.z - targetHeight) < 2.0
+    );
+    
+    if (nearbyPoints.length === 0) return 5.0;
+    
+    const radii = nearbyPoints.map(point => Math.sqrt(point.x * point.x + point.y * point.y));
+    return radii.reduce((sum, r) => sum + r, 0) / radii.length;
   }
 
   _reportProgress(stage, percent) {

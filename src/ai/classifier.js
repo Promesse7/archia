@@ -190,6 +190,48 @@ this.mobileNet = await mobilenet.load({
     });
   }
 
+  async predictVesselParams(imgElement) {
+    if (!this.loaded) {
+      if (this.loading) {
+        await new Promise((resolve, reject) => {
+          const check = setInterval(() => {
+            if (this.loaded) {
+              clearInterval(check);
+              resolve();
+            } else if (!this.loading) {
+              clearInterval(check);
+              reject(new Error("Loading failed"));
+            }
+          }, 100);
+        });
+      } else {
+        await this.initialize();
+      }
+    }
+
+    return tf.tidy(() => {
+      const features = this.extractFeatures(imgElement);
+      
+      // Simple regression head (train later on labeled data)
+      // For now, use random weights as placeholder
+      const dense = tf.layers.dense({units: 6, activation: 'linear'}).apply(features);
+      const params = dense.dataSync(); // [rimRadius, maxDiameter, height, rimAngle, baseWidth, bodyCurve]
+
+      const vesselParams = {
+        rimRadius: Math.abs(params[0]) * 15,
+        maxDiameter: Math.abs(params[1]) * 20,
+        height: Math.abs(params[2]) * 30,
+        rimAngle: params[3] * 45,
+        baseWidth: Math.abs(params[4]) * 12,
+        bodyCurve: params[5] * 0.8
+      };
+
+      console.log('CNN Vessel Parameters:', vesselParams);
+
+      return vesselParams;
+    });
+  }
+
   async train(trainingData, options = {}) {
     if (!this.mobileNet || !this.classifier) {
       throw new Error("Classifier not initialized");
