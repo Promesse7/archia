@@ -66,14 +66,15 @@ export default function PuzzlePiece({ piece, image, onUpdate, snapThreshold = 15
     });
     setIsDragging(true);
     setIsSnapping(false);
+    e.preventDefault();
   };
 
   const handleMouseMove = (e) => {
     if (!isDragging || piece.placed) return;
 
-    const rect = canvasRef.current.getBoundingClientRect();
-    const newX = e.clientX - rect.left - dragOffset.x;
-    const newY = e.clientY - rect.top - dragOffset.y;
+    const parentRect = canvasRef.current.parentElement.getBoundingClientRect();
+    const newX = e.clientX - parentRect.left - dragOffset.x;
+    const newY = e.clientY - parentRect.top - dragOffset.y;
 
     // Check for magnetic snapping with nearby pieces
     let snappedPosition = { x: newX, y: newY };
@@ -171,6 +172,22 @@ export default function PuzzlePiece({ piece, image, onUpdate, snapThreshold = 15
     setIsSnapping(false);
   };
 
+  // Global mouse event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      const handleGlobalMouseMove = (e) => handleMouseMove(e);
+      const handleGlobalMouseUp = () => handleMouseUp();
+
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+      };
+    }
+  }, [isDragging, dragOffset, piece, allPieces]);
+
   // Handle touch events for mobile
   const handleTouchStart = (e) => {
     e.preventDefault();
@@ -212,9 +229,6 @@ export default function PuzzlePiece({ piece, image, onUpdate, snapThreshold = 15
         transform: isSnapping ? "scale(1.05)" : "scale(1)"
       }}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
