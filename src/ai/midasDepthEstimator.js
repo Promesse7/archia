@@ -82,12 +82,12 @@ export class MiDaSDepthEstimator {
       const eroded = this.erode(dilated, 2);
 
       // Combine with original image for better depth cues
-    const combined = tf.tidy(() => {
-  const original384 = tf.image.resizeBilinear(normalized, [384, 384]);
-  // Make eroded broadcast-compatible by expanding to 3 channels
-  const eroded3 = eroded.expandDims(-1).tile([1, 1, 3]); // [384,384,1] → [384,384,3]
-  return original384.mul(0.7).add(eroded3.mul(0.3));
-});
+      const combined = tf.tidy(() => {
+        const original384 = tf.image.resizeBilinear(normalized, [384, 384]);
+        // Make eroded broadcast-compatible by expanding to 3 channels
+        const eroded3 = eroded.expandDims(-1).tile([1, 1, 3]); // [384,384,1] → [384,384,3]
+        return original384.mul(0.7).add(eroded3.mul(0.3));
+      });
 
       // Compute depth using edge and shading cues
       const depth = this.computeDepthMap(combined, eroded);
@@ -107,70 +107,67 @@ export class MiDaSDepthEstimator {
    * Edge detection using Sobel operator
    */
   detectEdges(input) {
-  return tf.tidy(() => {
-    // Convert RGB to grayscale first
-    let gray;
-    if (input.shape[2] === 3) {
-      gray = tf.mean(input, -1, true);           // [h, w, 1]
-    } else {
-      gray = input;
-    }
+    return tf.tidy(() => {
+      // Convert RGB to grayscale first
+      let gray;
+      if (input.shape[2] === 3) {
+        gray = tf.mean(input, -1, true);           // [h, w, 1]
+      } else {
+        gray = input;
+      }
 
-    const sobelX = tf.tensor2d([
-      [-1, 0, 1],
-      [-2, 0, 2],
-      [-1, 0, 1]
-    ]).reshape([3, 3, 1, 1]);
+      const sobelX = tf.tensor2d([
+        [-1, 0, 1],
+        [-2, 0, 2],
+        [-1, 0, 1]
+      ]).reshape([3, 3, 1, 1]);
 
-    const sobelY = tf.tensor2d([
-      [-1, -2, -1],
-      [0, 0, 0],
-      [1, 2, 1]
-    ]).reshape([3, 3, 1, 1]);
+      const sobelY = tf.tensor2d([
+        [-1, -2, -1],
+        [0, 0, 0],
+        [1, 2, 1]
+      ]).reshape([3, 3, 1, 1]);
 
-    const batch = gray.expandDims(0);            // [1, h, w, 1]
-    const gx = tf.conv2d(batch, sobelX, 1, 'same');
-    const gy = tf.conv2d(batch, sobelY, 1, 'same');
+      const batch = gray.expandDims(0);            // [1, h, w, 1]
+      const gx = tf.conv2d(batch, sobelX, 1, 'same');
+      const gy = tf.conv2d(batch, sobelY, 1, 'same');
 
-    const magnitude = tf.sqrt(gx.square().add(gy.square()).add(1e-7));
-    return magnitude.div(magnitude.max()).squeeze([-1]); // [h, w]
-  });
-}
+      const magnitude = tf.sqrt(gx.square().add(gy.square()).add(1e-7));
+      return magnitude.div(magnitude.max()).squeeze([-1]); // [h, w]
+    });
+  }
 
   /**
    * Morphological dilation
    */
-dilate(input, iterations = 1) {
-  let result = input;
-  for (let i = 0; i < iterations; i++) {
-    result = tf.tidy(() => {
-      const x = ensureRank4(result);
-      const pooled = tf.maxPool(x, [3, 3], [1, 1], 'same');
-      return pooled.squeeze([0, -1]);
-    });
+  dilate(input, iterations = 1) {
+    let result = input;
+    for (let i = 0; i < iterations; i++) {
+      result = tf.tidy(() => {
+        const x = ensureRank4(result);
+        const pooled = tf.maxPool(x, [3, 3], [1, 1], 'same');
+        return pooled.squeeze([0, -1]);
+      });
+    }
+    return result;
   }
-  return result;
-}
-
-
 
   /**
    * Morphological erosion
    */
-
-
-erode(input, iterations = 1) {
-  let result = input;
-  for (let i = 0; i < iterations; i++) {
-    result = tf.tidy(() => {
-      const inverted = tf.sub(1.0, result);
-      const x = ensureRank4(inverted);
-      const pooled = tf.maxPool(x, [3, 3], [1, 1], 'same');
-      return tf.sub(1.0, pooled.squeeze([0, -1]));
-    });
+  erode(input, iterations = 1) {
+    let result = input;
+    for (let i = 0; i < iterations; i++) {
+      result = tf.tidy(() => {
+        const inverted = tf.sub(1.0, result);
+        const x = ensureRank4(inverted);
+        const pooled = tf.maxPool(x, [3, 3], [1, 1], 'same');
+        return tf.sub(1.0, pooled.squeeze([0, -1]));
+      });
+    }
+    return result;
   }
-  return result;
-}
+
   /**
    * Compute depth map from edges and shading
    */
@@ -300,6 +297,47 @@ erode(input, iterations = 1) {
     }
 
     return points;
+  }
+
+  async extractProfileCurve(depthArray, width, height) {
+    // depthArray is 2D array [height][width]
+    const profile = [];
+
+    // Find center column (assume rotational symmetry around middle)
+    const centerX = Math.floor(width / 2);
+
+    for (let y = 0; y < height; y++) {
+      const depth = depthArray[y][centerX];
+      if (depth > 0.05 && depth < 1.0) { // valid range
+        profile.push({ y, depth });
+      }
+    }
+
+    // Simple curvature approximation (second difference)
+    const curvature = [];
+    for (let i = 1; i < profile.length - 1; i++) {
+      const d1 = profile[i].depth - profile[i-1].depth;
+      const d2 = profile[i+1].depth - profile[i].depth;
+      curvature.push(Math.abs(d2 - d1));
+    }
+
+    // Find segments with highest curvature change (edge/rim likely)
+    const maxCurvIdx = curvature.indexOf(Math.max(...curvature));
+    const rimStart = Math.max(0, maxCurvIdx - 5);
+    const rimEnd = Math.min(curvature.length - 1, maxCurvIdx + 5);
+
+    console.log('Profile Analysis:', {
+      totalPoints: profile.length,
+      curvaturePoints: curvature.length,
+      maxCurvatureIndex: maxCurvIdx,
+      rimSegment: { start: rimStart, end: rimEnd }
+    });
+
+    return {
+      profilePoints: profile,
+      rimSegment: { start: rimStart, end: rimEnd },
+      maxCurvatureIndex: maxCurvIdx
+    };
   }
 
   dispose() {

@@ -59,6 +59,35 @@ export class EnhancedPotteryPipeline {
       this._reportProgress("Classifying fragment...", 40);
       const classification = await this.classifier.classify(videoElement);
 
+      // Stage 2.5: Profile Analysis (NEW)
+      this._reportProgress("Analyzing profile curve...", 55);
+      const depthArray = await depthTensor.array();
+      const profile = await this.depthEstimator.extractProfileCurve(
+        depthArray,
+        videoElement.videoWidth || 384,
+        videoElement.videoHeight || 384
+      );
+
+      const segments = this.segmentProfile(profile);
+
+      // Simple rule-based override for classification
+      let finalType = classification.fragmentType;
+      let finalConf = classification.confidence;
+
+      if (segments.rim.length > segments.body.length * 1.5) {
+        finalType = "rim";
+        finalConf = Math.max(0.7, finalConf);
+        console.log('Rule-based override: Detected RIM fragment');
+      } else if (segments.base.length > segments.body.length * 1.2) {
+        finalType = "base";
+        finalConf = Math.max(0.65, finalConf);
+        console.log('Rule-based override: Detected BASE fragment');
+      }
+
+      // Update classification with rule-based improvements
+      classification.fragmentType = finalType;
+      classification.confidence = finalConf;
+
       // Stage 3: Point Cloud Generation
       this._reportProgress("Generating point cloud...", 70);
       const pointCloudData = PointCloudGenerator.rgbDepthToPointCloud(
@@ -76,8 +105,6 @@ export class EnhancedPotteryPipeline {
 
       this._reportProgress("Creating geometry...", 85);
 
-      // Capture depth data before disposal
-      const depthArray = await depthTensor.array();
       depthTensor.dispose();
 
       const processingTime = performance.now() - startTime;
@@ -88,6 +115,12 @@ export class EnhancedPotteryPipeline {
         pointCount: pointCloudData.count,
         depthMap: depthArray,
         normals: pointCloudData.normals,
+        profileAnalysis: {
+          profile,
+          segments,
+          ruleBasedType: finalType,
+          originalType: classification.fragmentType
+        },
         processingTime,
         timestamp: Date.now(),
       };
@@ -225,6 +258,36 @@ export class EnhancedPotteryPipeline {
     const threshold = minZ + 0.5; // 0.5 units above minimum
 
     return pointCloud.filter((p) => p.z < threshold);
+  }
+
+  segmentProfile(profileResult) {
+    const { profilePoints, maxCurvatureIndex } = profileResult;
+
+    // Very simple rule-based segmentation
+    let segments = {
+      rim: [],
+      body: [],
+      base: []
+    };
+
+    // Rim: top part until max curvature
+    segments.rim = profilePoints.slice(0, maxCurvatureIndex + 1);
+
+    // Body: middle flat-ish part
+    const bodyEnd = profilePoints.length * 0.7; // rough heuristic
+    segments.body = profilePoints.slice(maxCurvatureIndex + 1, bodyEnd);
+
+    // Base: bottom flat part
+    segments.base = profilePoints.slice(bodyEnd);
+
+    console.log('Profile Segmentation:', {
+      rimLength: segments.rim.length,
+      bodyLength: segments.body.length,
+      baseLength: segments.base.length,
+      totalLength: profilePoints.length
+    });
+
+    return segments;
   }
 
   _reportProgress(stage, percent) {
