@@ -6,6 +6,14 @@ import { getPotteryReconstructor } from '../reconstruction/potteryRebuilder';
 export default function ReconstructionPage({ onNavigate, fragments }) {
   const [reconstructedMesh, setReconstructedMesh] = useState(null);
 
+  // Auto-reconstruct when fragments are available
+  React.useEffect(() => {
+    if (hasFragments && fragments.length > 0) {
+      console.log("Auto-reconstructing with fragments:", fragments.length);
+      reconstructPottery(fragments);
+    }
+  }, [fragments]);
+
   const reconstructPottery = (fragmentsList) => {
     try {
       console.log("Starting reconstruction with fragments:", fragmentsList.length);
