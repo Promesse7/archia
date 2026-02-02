@@ -17,6 +17,7 @@ export default function PuzzleBoard({
   const [imageError, setImageError] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const containerRef = useRef(null);
   const [containerSize, setContainerSize] = useState({ 
     width: cols * pieceSize, 
@@ -82,12 +83,21 @@ export default function PuzzleBoard({
     console.log('PuzzleBoard: Initializing puzzle with img dimensions:', img.width, 'x', img.height);
     console.log('PuzzleBoard: Container size:', containerSize);
     
+    // Store image dimensions for background sizing
+    setImageDimensions({ width: img.width, height: img.height });
+    
     const newPieces = [];
+    const scale = containerSize.scale || 1;
+    const scaledPieceSize = pieceSize * scale;
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const id = `${row}-${col}`;
         const correctPosition = row * cols + col;
+        
+        // Calculate the actual size of each piece in the original image
+        const pieceImageWidth = img.width / cols;
+        const pieceImageHeight = img.height / rows;
         
         newPieces.push({
           id,
@@ -99,10 +109,10 @@ export default function PuzzleBoard({
           y: Math.floor(correctPosition / cols) * pieceSize,
           width: pieceSize,
           height: pieceSize,
-          imageX: col * (img.width / cols),
-          imageY: row * (img.height / rows),
-          imageWidth: img.width / cols,
-          imageHeight: img.height / rows
+          imageX: col * pieceImageWidth,
+          imageY: row * pieceImageHeight,
+          imageWidth: pieceImageWidth,
+          imageHeight: pieceImageHeight
         });
       }
     }
@@ -593,45 +603,50 @@ export default function PuzzleBoard({
         )}
 
         {/* Puzzle pieces */}
-        {pieces.map((piece) => (
-          <div
-            key={piece.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, piece)}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, piece)}
-            onTouchStart={(e) => handleTouchStart(e, piece)}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            style={{
-              position: 'absolute',
-              left: piece.x * (containerSize.scale || 1),
-              top: piece.y * (containerSize.scale || 1),
-              width: piece.width * (containerSize.scale || 1),
-              height: piece.height * (containerSize.scale || 1),
-              backgroundImage: `url(${imageSrc})`,
-              backgroundPosition: `-${piece.imageX * (containerSize.scale || 1)}px -${piece.imageY * (containerSize.scale || 1)}px`,
-              backgroundSize: `${cols * piece.imageWidth * (containerSize.scale || 1)}px ${rows * piece.imageHeight * (containerSize.scale || 1)}px`,
-              border: piece.currentPosition === piece.correctPosition 
-                ? '3px solid #4caf50' 
-                : piece.snapped 
-                  ? '2px solid #2196f3' 
-                  : '1px solid #ccc',
-              cursor: draggedPiece?.id === piece.id ? 'grabbing' : 'grab',
-              borderRadius: '4px',
-              transition: draggedPiece?.id === piece.id ? 'none' : 'all 0.2s ease',
-              zIndex: draggedPiece?.id === piece.id ? 1000 : piece.currentPosition === piece.correctPosition ? 10 : 1,
-              opacity: draggedPiece?.id === piece.id ? 0.8 : 1,
-              boxShadow: piece.currentPosition === piece.correctPosition 
-                ? '0 2px 8px rgba(76, 175, 80, 0.4)' 
-                : '0 1px 3px rgba(0,0,0,0.2)',
-              transform: draggedPiece?.id === piece.id ? 'scale(1.05)' : 'scale(1)',
-              userSelect: 'none',
-              WebkitUserSelect: 'none',
-              WebkitTouchCallout: 'none'
-            }}
-          />
-        ))}
+        {pieces.map((piece) => {
+          const scale = containerSize.scale || 1;
+          const scaledPieceSize = pieceSize * scale;
+          
+          return (
+            <div
+              key={piece.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, piece)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, piece)}
+              onTouchStart={(e) => handleTouchStart(e, piece)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              style={{
+                position: 'absolute',
+                left: piece.x * scale,
+                top: piece.y * scale,
+                width: scaledPieceSize,
+                height: scaledPieceSize,
+                backgroundImage: `url(${imageSrc})`,
+                backgroundPosition: `-${piece.imageX * scale}px -${piece.imageY * scale}px`,
+                backgroundSize: `${imageDimensions.width * scale}px ${imageDimensions.height * scale}px`,
+                border: piece.currentPosition === piece.correctPosition 
+                  ? '3px solid #4caf50' 
+                  : piece.snapped 
+                    ? '2px solid #2196f3' 
+                    : '1px solid #ccc',
+                cursor: draggedPiece?.id === piece.id ? 'grabbing' : 'grab',
+                borderRadius: '4px',
+                transition: draggedPiece?.id === piece.id ? 'none' : 'all 0.2s ease',
+                zIndex: draggedPiece?.id === piece.id ? 1000 : piece.currentPosition === piece.correctPosition ? 10 : 1,
+                opacity: draggedPiece?.id === piece.id ? 0.8 : 1,
+                boxShadow: piece.currentPosition === piece.correctPosition 
+                  ? '0 2px 8px rgba(76, 175, 80, 0.4)' 
+                  : '0 1px 3px rgba(0,0,0,0.2)',
+                transform: draggedPiece?.id === piece.id ? 'scale(1.05)' : 'scale(1)',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none'
+              }}
+            />
+          );
+        })}
         
         {/* Completion Overlay */}
         {isCompleted && (
