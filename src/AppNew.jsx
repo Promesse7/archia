@@ -1,86 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useCallback, useMemo, useState } from 'react';
 import { useRouter } from './router';
-import Navigation from './components/Navigation';
+import { AppShell } from './features/core';
 
-// Import pages
-import SplashPage from './pages/SplashPage';
-import HomePage from './pages/HomePage';
-import CapturePage from './pages/CapturePage';
-import ReconstructionPage from './pages/ReconstructionPage';
-import PuzzlePage from './pages/PuzzlePage';
-import AboutPage from './pages/AboutPage';
-
-// Page component mapping
-const pageComponents = {
-  splash: SplashPage,
-  home: HomePage,
-  capture: CapturePage,
-  reconstruction: ReconstructionPage,
-  puzzle: PuzzlePage,
-  about: AboutPage
-};
+const SplashPage = React.lazy(() => import('./pages/SplashPage'));
+const HomePage = React.lazy(() => import('./pages/HomePage'));
+const CapturePage = React.lazy(() => import('./pages/CapturePage'));
+const ReconstructionPage = React.lazy(() => import('./pages/ReconstructionPage'));
+const GalleryPage = React.lazy(() => import('./pages/GalleryPage'));
+const PuzzlePage = React.lazy(() => import('./pages/PuzzlePage'));
+const AboutPage = React.lazy(() => import('./pages/AboutPage'));
 
 export default function App() {
   const { currentPage, navigate } = useRouter();
   const [fragments, setFragments] = useState([]);
-  const [modelsLoaded, setModelsLoaded] = useState(false);
 
   // Handle fragment addition
-  const handleFragmentAdded = (fragment) => {
+  const handleFragmentAdded = useCallback((fragment) => {
     setFragments(prev => [...prev, fragment]);
-  };
+  }, []);
 
   // Handle splash completion
-  const handleSplashComplete = () => {
-    setModelsLoaded(true);
+  const handleSplashComplete = useCallback(() => {
     navigate('home');
-  };
+  }, [navigate]);
 
-  // Render current page
-  const renderCurrentPage = () => {
-    const PageComponent = pageComponents[currentPage];
-    
-    if (!PageComponent) {
-      console.error(`Unknown page: ${currentPage}`);
-      return <HomePage onNavigate={navigate} fragmentCount={fragments.length} />;
-    }
-
-    // Special handling for pages that need extra props
+  const activeScreen = useMemo(() => {
     switch (currentPage) {
       case 'splash':
-        return <PageComponent onReady={handleSplashComplete} />;
-      
+        return <SplashPage onReady={handleSplashComplete} />;
       case 'home':
-        return <PageComponent onNavigate={navigate} fragmentCount={fragments.length} />;
-      
+        return <HomePage onNavigate={navigate} fragmentCount={fragments.length} />;
       case 'capture':
-        return <PageComponent onNavigate={navigate} onFragmentAdded={handleFragmentAdded} />;
-      
+        return <CapturePage onNavigate={navigate} onFragmentAdded={handleFragmentAdded} />;
       case 'reconstruction':
-        return <PageComponent onNavigate={navigate} fragments={fragments} />;
-      
+        return <ReconstructionPage onNavigate={navigate} fragments={fragments} />;
+      case 'gallery':
+        return <GalleryPage onNavigate={navigate} fragments={fragments} />;
       case 'puzzle':
+        return <PuzzlePage onNavigate={navigate} />;
       case 'about':
-        return <PageComponent onNavigate={navigate} />;
-      
+        return <AboutPage onNavigate={navigate} />;
       default:
-        return <PageComponent onNavigate={navigate} />;
+        return <HomePage onNavigate={navigate} fragmentCount={fragments.length} />;
     }
-  };
+  }, [currentPage, fragments, navigate, handleFragmentAdded, handleSplashComplete]);
 
-  // Show splash screen while models load, then show navigation + pages
   if (currentPage === 'splash') {
-    return renderCurrentPage();
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+        {activeScreen}
+      </Suspense>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      <Navigation 
-        currentPage={currentPage} 
-        onNavigate={navigate}
-        fragmentCount={fragments.length}
-      />
-      {renderCurrentPage()}
-    </div>
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+      <AppShell currentPage={currentPage} onNavigate={navigate} fragmentCount={fragments.length}>
+        {activeScreen}
+      </AppShell>
+    </Suspense>
   );
 }

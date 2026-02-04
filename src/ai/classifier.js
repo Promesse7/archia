@@ -212,23 +212,18 @@ this.mobileNet = await mobilenet.load({
     return tf.tidy(() => {
       const features = this.extractFeatures(imgElement);
       
-      // Simple regression head (train later on labeled data)
-      // For now, use random weights as placeholder
-      const dense = tf.layers.dense({units: 6, activation: 'linear'}).apply(features);
-      const params = dense.dataSync(); // [rimRadius, maxDiameter, height, rimAngle, baseWidth, bodyCurve]
-
-      const vesselParams = {
-        rimRadius: Math.abs(params[0]) * 15,
-        maxDiameter: Math.abs(params[1]) * 20,
-        height: Math.abs(params[2]) * 30,
-        rimAngle: params[3] * 45,
-        baseWidth: Math.abs(params[4]) * 12,
-        bodyCurve: params[5] * 0.8
+      // Simple untrained regression (improve later with fine-tuning)
+      const output = tf.layers.dense({units: 6, activation: 'sigmoid'}).apply(features);
+      const params = output.dataSync();
+      
+      return {
+        rimRadius: params[0] * 15 + 5,
+        maxDiameter: params[1] * 25 + 10,
+        totalHeight: params[2] * 40 + 15,
+        neckRatio: params[3] * 0.4,
+        baseWidth: params[4] * 12 + 5,
+        flareFactor: params[5] * 1.2 + 0.5
       };
-
-      console.log('CNN Vessel Parameters:', vesselParams);
-
-      return vesselParams;
     });
   }
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import EnhancedReconstructionViewer from '../components/EnhancedReconstructionViewer';
 import { Card, CardHeader, CardTitle, CardContent, Button, SectionHeader } from '../components/ui';
 import { getPotteryReconstructor } from '../reconstruction/potteryRebuilder';
+import { getFragmentClassifier } from '../ai/classifier';
 
 export default function ReconstructionPage({ onNavigate, fragments }) {
   const [reconstructedMesh, setReconstructedMesh] = useState(null);
@@ -14,7 +15,7 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
     }
   }, [fragments]);
 
-  const reconstructPottery = (fragmentsList) => {
+  const reconstructPottery = async (fragmentsList) => {
     try {
       console.log("Starting reconstruction with fragments:", fragmentsList.length);
       
@@ -33,7 +34,23 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
         }
       });
 
-      const mesh = reconstructor.reconstruct();
+      // Get CNN semantic guidance from the most recent fragment image
+      let cnnParams = null;
+      if (fragmentsList.length > 0) {
+        const latestFragment = fragmentsList[fragmentsList.length - 1];
+        if (latestFragment.imageElement) {
+          console.log("Extracting CNN semantic parameters from fragment image...");
+          const classifier = await getFragmentClassifier();
+          cnnParams = await classifier.predictVesselParams(latestFragment.imageElement);
+          console.log("CNN semantic parameters:", cnnParams);
+        }
+      }
+
+      // Use semantic guidance if available, otherwise fall back to standard reconstruction
+      const mesh = cnnParams 
+        ? reconstructor.reconstructWithSemanticParams(cnnParams)
+        : reconstructor.reconstruct();
+        
       console.log("Reconstruction complete, mesh:", mesh);
       
       setReconstructedMesh(mesh);

@@ -35,6 +35,7 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
 
       const fragmentData = {
         image: result.image,
+        imageElement: img, // Include image element for CNN semantic guidance
         classification: processedResult.classification,
         pointCloud: processedResult.pointCloud,
         pointCloudData: {

@@ -3,7 +3,26 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --app-bg: 9 9 11;
+    --app-fg: 255 255 255;
+    --surface: 24 24 27;
+    --surface-2: 39 39 42;
+    --border: 63 63 70;
+    --muted: 161 161 170;
+    --accent: 245 158 11;
+    --accent-fg: 9 9 11;
+    --ring: 245 158 11;
+  }
+
   body {
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: rgb(var(--app-bg));
+    color: rgb(var(--app-fg));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--ring));
+    outline-offset: 2px;
   }
 }

@@ -85,6 +85,33 @@ export class PotteryReconstructor {
     return this.smoothProfile(merged, 7);
   }
 
+  buildMeshFromSemanticParams(profile, cnnParams, segments = 64) {
+    // Scale profile points using CNN params
+    const scaledPoints = [];
+    for (let i = 0; i < profile.length; i++) {
+      const t = i / (profile.length - 1);
+      let radius = profile[i].r; // original radius
+      
+      // Apply flare at rim, taper at body
+      if (t > 0.8) radius *= cnnParams.flareFactor;
+      if (t < 0.3) radius *= (1 - cnnParams.neckRatio * (0.3 - t) / 0.3);
+      
+      scaledPoints.push(new THREE.Vector2(radius * cnnParams.maxDiameter / 20, t * cnnParams.totalHeight));
+    }
+
+    const geometry = new THREE.LatheGeometry(scaledPoints, segments);
+    geometry.computeVertexNormals();
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xc2a070,
+      metalness: 0.1,
+      roughness: 0.8,
+      side: THREE.DoubleSide
+    });
+
+    return new THREE.Mesh(geometry, material);
+  }
+
   buildMeshFromProfile(profile, segments = 64) {
     const points = profile.map(p => new THREE.Vector2(p.r, p.y));
 
@@ -124,6 +151,52 @@ export class PotteryReconstructor {
     });
 
     return new THREE.Mesh(geometry, material);
+  }
+
+  buildDefaultPotteryWithSemanticParams(cnnParams) {
+    const points = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10;
+      let radius = 2 + Math.sin(t * Math.PI) * 0.5;
+      
+      // Apply flare at rim, taper at body
+      if (t > 0.8) radius *= cnnParams.flareFactor;
+      if (t < 0.3) radius *= (1 - cnnParams.neckRatio * (0.3 - t) / 0.3);
+      
+      points.push(new THREE.Vector2(radius * cnnParams.maxDiameter / 20, t * cnnParams.totalHeight));
+    }
+
+    const geometry = new THREE.LatheGeometry(points, 64);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xc2a070,
+      metalness: 0.1,
+      roughness: 0.8
+    });
+
+    return new THREE.Mesh(geometry, material);
+  }
+
+  reconstructWithSemanticParams(cnnParams) {
+    if (this.fragments.length === 0) {
+      console.warn("No fragments added, using default pottery with semantic params");
+      return this.buildDefaultPotteryWithSemanticParams(cnnParams);
+    }
+
+    console.log(`Reconstructing pottery from ${this.fragments.length} fragments with semantic guidance`);
+
+    const profiles = this.fragments.map(fragment => 
+      this.extractSymmetryProfile(fragment.points)
+    );
+
+    const finalProfile = this.mergeProfiles(profiles);
+
+    console.log(`Final profile: ${finalProfile.length} points, applying CNN semantic deformation`);
+
+    const mesh = this.buildMeshFromSemanticParams(finalProfile, cnnParams);
+
+    this.applyFragmentConstraints(mesh);
+
+    return mesh;
   }
 
   reconstruct() {
@@ -195,4 +268,17 @@ export function buildPotteryMesh(fragments = []) {
   }
 
   return reconstructor.reconstruct();
+}
+
+export function buildPotteryMeshWithSemanticParams(fragments = [], cnnParams) {
+  const reconstructor = getPotteryReconstructor();
+  
+  if (fragments.length > 0) {
+    reconstructor.clear();
+    fragments.forEach(f => {
+      reconstructor.addFragment(f.pointCloud, { fragmentType: f.fragmentType });
+    });
+  }
+
+  return reconstructor.reconstructWithSemanticParams(cnnParams);
 }

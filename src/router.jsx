@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { DEFAULT_PAGE, NAV_ITEMS } from './features/core';
 
 // Simple page-based routing system
 export function useRouter() {
-  const [currentPage, setCurrentPage] = useState('splash');
+  const [currentPage, setCurrentPage] = useState(DEFAULT_PAGE);
   
   const navigate = (page) => {
     setCurrentPage(page);
@@ -12,13 +13,7 @@ export function useRouter() {
 }
 
 // Global navigation structure
-export const NAVIGATION_ITEMS = [
-  { id: 'home', label: 'Home', icon: '🏠' },
-  { id: 'capture', label: 'Capture', icon: '📸' },
-  { id: 'reconstruction', label: 'Reconstruction', icon: '🏺' },
-  { id: 'puzzle', label: 'Puzzle Lab', icon: '🧩' },
-  { id: 'about', label: 'About', icon: '📚' }
-];
+export const NAVIGATION_ITEMS = NAV_ITEMS;
 
 // Page components will be imported and rendered based on currentPage
 export const PAGES = {
@@ -26,6 +21,7 @@ export const PAGES = {
   home: 'HomePage',
   capture: 'CapturePage',
   reconstruction: 'ReconstructionPage',
+  gallery: 'GalleryPage',
   puzzle: 'PuzzlePage',
   about: 'AboutPage'
 };
