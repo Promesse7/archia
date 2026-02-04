@@ -470,275 +470,93 @@ export default function PuzzleBoard({
           position: 'relative',
           width: isFullscreen ? '100vw' : `${containerSize.width}px`,
           height: isFullscreen ? '100vh' : `${containerSize.height}px`,
-          border: '2px solid #ddd',
-          borderRadius: '12px',
-          backgroundColor: '#f5f5f5',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
         }}
       >
-        <div style={{
-          position: 'absolute',
-          top: '10px',
-          left: '10px',
-          display: 'flex',
-          gap: '10px',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          zIndex: 900,
-          backgroundColor: 'rgba(255,255,255,0.8)',
-          padding: '8px',
-          borderRadius: '10px',
-          backdropFilter: 'blur(6px)'
-        }}>
+        <div className="absolute top-2.5 left-2.5 flex gap-2 z-10">
           <button
             onClick={toggleHint}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#ff9800',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: 'clamp(12px, 2vw, 14px)',
-              fontWeight: '500',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+            className="px-5 py-2.5 bg-clay text-white rounded-lg font-medium hover:bg-clay/80 transition-colors"
           >
-            💡 Hint
+            {showHint ? 'Hide Hint' : 'Show Hint'}
           </button>
 
           <button
             onClick={resolvePuzzle}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#4caf50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: 'clamp(12px, 2vw, 14px)',
-              fontWeight: '500',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+            className="px-5 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-500 transition-colors"
           >
-            ✅ Resolve
+            Solve
           </button>
 
           <button
             onClick={toggleFullscreen}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#9c27b0',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: 'clamp(12px, 2vw, 14px)',
-              fontWeight: '500',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+            className="px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-500 transition-colors"
           >
-            {isFullscreen ? '🔲 Exit Fullscreen' : '🔳 Fullscreen'}
+            {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           </button>
 
           <button
             onClick={resetPuzzle}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#f44336',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: 'clamp(12px, 2vw, 14px)',
-              fontWeight: '500',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-            }}
-            onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+            className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-500 transition-colors"
           >
-            🔄 Reset Puzzle
+            Reset
           </button>
         </div>
         {loading && (
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexDirection: 'column',
-            gap: '20px',
-            backgroundColor: 'rgba(245,245,245,0.85)',
-            zIndex: 999
-          }}>
-            <div>Loading puzzle...</div>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              border: '3px solid #f3f3f3',
-              borderTop: '3px solid #4caf50',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 z-[999]">
+            <div className="text-ink">Loading puzzle...</div>
+            <div className="w-12 h-12 border-3 border-surface border-t-accent rounded-full animate-spin mt-2" />
           </div>
         )}
-        {/* Hint Overlay */}
         {showHint && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `url(${imageSrc})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: 0.7,
-            zIndex: 100,
-            transition: 'opacity 0.3s ease',
-            borderRadius: '12px'
-          }} />
+          <div className="absolute inset-0 pointer-events-none z-20">
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 w-full h-full z-2"
+            />
+          </div>
         )}
 
-        {/* Grid overlay */}
         {showGrid && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `
-              repeating-linear-gradient(0deg, rgba(200,200,200,0.3) 0px, transparent 1px, transparent ${pieceSize * (containerSize.scale || 1)}px, rgba(200,200,200,0.3) ${pieceSize * (containerSize.scale || 1) + 1}px),
-              repeating-linear-gradient(90deg, rgba(200,200,200,0.3) 0px, transparent 1px, transparent ${pieceSize * (containerSize.scale || 1)}px, rgba(200,200,200,0.3) ${pieceSize * (containerSize.scale || 1) + 1}px)
-            `,
-            pointerEvents: 'none',
-            zIndex: 1
-          }} />
+          <div 
+            className="absolute inset-0 pointer-events-none z-10"
+            style={{
+              backgroundImage: `
+                repeating-linear-gradient(0deg, rgba(200,200,200,0.3) 0px, transparent 1px, transparent ${pieceSize * (containerSize.scale || 1)}px, rgba(200,200,200,0.3) ${pieceSize * (containerSize.scale || 1) + 1}px),
+                repeating-linear-gradient(90deg, rgba(200,200,200,0.3) 0px, transparent 1px, transparent ${pieceSize * (containerSize.scale || 1)}px, rgba(200,200,200,0.3) ${pieceSize * (containerSize.scale || 1) + 1}px)
+              `,
+            }}
+          />
         )}
 
-        <canvas
-          ref={canvasRef}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 2
-          }}
-        />
-        
-        {/* Completion Overlay */}
         {isCompleted && (
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(76, 175, 80, 0.95)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            color: 'white',
-            zIndex: 1000,
-            borderRadius: '12px',
-            backdropFilter: 'blur(4px)'
-          }}>
-            <div style={{
-              fontSize: 'clamp(36px, 6vw, 60px)',
-              marginBottom: '20px',
-              animation: 'bounce 1s ease-in-out'
-            }}>
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-green-600/95 text-white z-[1000] rounded-xl backdrop-blur-sm">
+            <div className="text-[clamp(36px,6vw,60px)] mb-5 animate-bounce">
               🎉
             </div>
-            <div style={{
-              fontSize: 'clamp(24px, 4vw, 36px)',
-              fontWeight: 'bold',
-              marginBottom: '10px',
-              textAlign: 'center'
-            }}>
+            <div className="text-[clamp(24px,4vw,36px)] font-bold mb-2.5 text-center">
               Puzzle Complete!
             </div>
-            <div style={{
-              fontSize: 'clamp(14px, 2.5vw, 18px)',
-              opacity: 0.9,
-              textAlign: 'center',
-              marginBottom: '30px',
-              maxWidth: '80%'
-            }}>
+            <div className="text-[clamp(14px,2.5vw,18px)] opacity-90 text-center mb-7.5 max-w-[80%]">
               Excellent archaeological reconstruction skills! 
               You've successfully restored this ancient artifact.
             </div>
             <button
               onClick={resetPuzzle}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'white',
-                color: '#4caf50',
-                border: 'none',
-                borderRadius: '25px',
-                cursor: 'pointer',
-                fontSize: 'clamp(14px, 2.5vw, 16px)',
-                fontWeight: 'bold',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-              }}
-              onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
-              onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+              className="px-6 py-3 bg-white text-green-600 rounded-lg font-medium hover:bg-gray-100 transition-colors"
             >
-              🎮 Play Again
+              Play Again
             </button>
           </div>
         )}
       </div>
 
-      {/* Educational Instructions */}
-      <div style={{
-        textAlign: 'center',
-        color: '#666',
-        fontSize: 'clamp(12px, 2vw, 14px)',
-        maxWidth: '600px',
-        lineHeight: '1.5',
-        padding: '15px',
-        backgroundColor: '#f9f9f9',
-        borderRadius: '8px',
-        border: '1px solid #e0e0e0'
-      }}>
-        <strong style={{ color: '#333' }}>🔍 How to play:</strong> 
+      <div className="text-center text-muted text-[clamp(12px,2vw,14px)] max-w-[600px] leading-6 p-4 bg-surface rounded-lg border">
+        <span className="font-semibold text-ink">🔍 How to play:</span>{' '}
         Drag and drop puzzle pieces to reconstruct the archaeological image. 
-        Pieces will <strong style={{ color: '#2196f3' }}>snap</strong> when close to the correct position. 
-        <strong style={{ color: '#4caf50' }}>Green borders</strong> indicate pieces in the correct position. 
+        Pieces will <span className="text-blue-600 font-semibold">snap</span> when close to the correct position. 
+        <span className="text-green-600 font-semibold"> Green borders</span> indicate pieces in the correct position. 
         This trains pattern recognition skills essential for real archaeological reconstruction work.
       </div>
-
-      {/* CSS Animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-20px); }
-            60% { transform: translateY(-10px); }
-          }
-        `
-      }} />
     </div>
   );
 }

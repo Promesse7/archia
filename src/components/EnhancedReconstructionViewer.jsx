@@ -206,109 +206,56 @@ useEffect(() => {
     faces: geo.index ? geo.index.count / 3 : 0,
     type: "Rebuilt Pottery Mesh"
   });
-  
+
   console.log("Mesh successfully added to scene");
 }, [mesh, showMesh]);
 
-  return (
-    <div
-      ref={containerRef}
-      style={{
-        width: "100%",
-        height: "100%",
-        position: "relative",
-        backgroundColor: "#0a0a0a",
-        borderRadius: "8px",
-        overflow: "hidden",
-      }}
-    >
-      {error && (
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            left: "10px",
-            backgroundColor: "rgba(255, 0, 0, 0.1)",
-            border: "1px solid #ff6b6b",
-            color: "#ff6b6b",
-            padding: "10px",
-            borderRadius: "4px",
-            zIndex: 10,
-            maxWidth: "200px",
-            fontSize: "0.85em",
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-{!mesh && (
+return (
   <div
-    style={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      color: "#666",
-      textAlign: "center",
-      pointerEvents: "none",
-    }}
+    ref={containerRef}
+    className="relative w-full h-full bg-background rounded-lg overflow-hidden"
   >
-    <div style={{ fontSize: "1.2em", marginBottom: "10px" }}>
-      🎨 Rebuild to show pottery
-    </div>
+    {error && (
+      <div className="absolute top-2.5 left-2.5 bg-red-500/10 border border-red-400 text-red-400 p-2.5 rounded z-10 max-w-[200px] text-xs">
+        {error}
+      </div>
+    )}
+
+    {!mesh && (
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-muted text-center pointer-events-none">
+        <div className="text-lg mb-2.5">
+          Rebuild to show pottery
+        </div>
+      </div>
+    )}
+
+    {stats && (
+      <div
+        className="absolute bottom-2.5 left-2.5 bg-black/70 text-white p-2.5 rounded z-5 text-xs font-mono"
+      >
+        <div className="mb-1 text-orange-400 font-bold">
+          {stats.type}
+        </div>
+        {stats.points && <div>Points: {stats.points.toLocaleString()}</div>}
+        {stats.vertices && <div>Vertices: {stats.vertices.toLocaleString()}</div>}
+        {stats.faces && <div>Faces: {Math.floor(stats.faces).toLocaleString()}</div>}
+      </div>
+    )}
+
+    {classification && (
+      <div
+        className="absolute top-2.5 right-2.5 bg-black/70 text-white p-2.5 rounded z-5 text-xs"
+      >
+        <div className="mb-1 text-green-500 font-bold">
+          {classification.fragmentType?.toUpperCase()}
+        </div>
+        <div className="text-gray-400">
+          Confidence: {(classification.confidence * 100).toFixed(1)}%
+        </div>
+        <div className="text-gray-400 text-xs mt-1">
+          {classification.curvature}
+        </div>
+      </div>
+    )}
   </div>
-)}
-
-      {stats && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "10px",
-            left: "10px",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            color: "#fff",
-            padding: "12px",
-            borderRadius: "4px",
-            fontSize: "0.8em",
-            fontFamily: "monospace",
-            zIndex: 5,
-          }}
-        >
-          <div style={{ marginBottom: "4px", color: "#c2a070", fontWeight: "bold" }}>
-            {stats.type}
-          </div>
-          {stats.points && <div>Points: {stats.points.toLocaleString()}</div>}
-          {stats.vertices && <div>Vertices: {stats.vertices.toLocaleString()}</div>}
-          {stats.faces && <div>Faces: {Math.floor(stats.faces).toLocaleString()}</div>}
-        </div>
-      )}
-
-      {classification && (
-        <div
-          style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            color: "#fff",
-            padding: "12px",
-            borderRadius: "4px",
-            fontSize: "0.85em",
-            zIndex: 5,
-          }}
-        >
-          <div style={{ marginBottom: "4px", color: "#4caf50", fontWeight: "bold" }}>
-            {classification.fragmentType?.toUpperCase()}
-          </div>
-          <div style={{ color: "#aaa" }}>
-            Confidence: {(classification.confidence * 100).toFixed(1)}%
-          </div>
-          <div style={{ color: "#aaa", fontSize: "0.8em", marginTop: "4px" }}>
-            {classification.curvature}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+);

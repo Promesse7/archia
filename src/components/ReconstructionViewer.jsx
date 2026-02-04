@@ -2,6 +2,11 @@ import React, { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
+import { PotteryAxisDetector } from "../reconstruction/axisDetection.js";
+import { PotteryProfileAnalyzer } from "../reconstruction/profilePrimitives.js";
+import { PotteryProfileExporter } from "../reconstruction/profileExporter.js";
+import { PotteryThicknessAnalyzer } from "../reconstruction/thicknessAnalysis.js";
+import { ConstraintAwareReconstructor } from "../reconstruction/constraintAwareReconstruction.js";
 
 function PotteryMesh({ mesh }) {
   const meshRef = useRef();
@@ -181,11 +186,194 @@ function Scene({ mesh, showPointCloud, pointCloud }) {
   );
 }
 
-export default function ReconstructionViewer({ mesh, pointCloud = null, showPointCloud = false }) {
+export default function ReconstructionViewer({ 
+  mesh, 
+  pointCloud = null, 
+  showPointCloud = false,
+  onAnalysisComplete = null 
+}) {
   const [stats, setStats] = useState(null);
   const [contextLost, setContextLost] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Analysis state
+  const [axisDetection, setAxisDetection] = useState(null);
+  const [profilePrimitives, setProfilePrimitives] = useState(null);
+  const [thicknessProfile, setThicknessProfile] = useState(null);
+  const [analysisProgress, setAnalysisProgress] = useState(null);
+  const [showAnalysis, setShowAnalysis] = useState(true);
+  const [constrainedReconstruction, setConstrainedReconstruction] = useState(null);
+  const [showConstraints, setShowConstraints] = useState(false);
+  
+  // Analysis modules
+  const axisDetector = useRef(new PotteryAxisDetector());
+  const profileAnalyzer = useRef(new PotteryProfileAnalyzer());
+  const profileExporter = useRef(new PotteryProfileExporter());
+  const thicknessAnalyzer = useRef(new PotteryThicknessAnalyzer());
+  const constraintReconstructor = useRef(new ConstraintAwareReconstructor());
 
+  // Run geometric analysis when mesh is available
+  useEffect(() => {
+    if (!mesh) return;
+    
+    const runAnalysis = async () => {
+      try {
+        setAnalysisProgress('Detecting symmetry axis...');
+        
+        // 1. Axis Detection
+        const axisResult = axisDetector.current.detectAxis(mesh);
+        setAxisDetection(axisResult);
+        
+        setAnalysisProgress('Extracting profile primitives...');
+        
+        // 2. Extract profile from mesh
+        const profilePoints = extractProfileFromMesh(mesh);
+        
+        // 3. Profile primitive analysis
+        const primitiveResult = profileAnalyzer.current.analyzeProfile(profilePoints);
+        setProfilePrimitives(primitiveResult);
+        
+        setAnalysisProgress('Analyzing thickness profile...');
+        
+        // 4. Thickness analysis
+        const thicknessResult = thicknessAnalyzer.current.extractThicknessProfile(mesh, axisResult);
+        setThicknessProfile(thicknessResult);
+        
+        setAnalysisProgress('Analysis complete');
+        
+        // Notify parent component
+        if (onAnalysisComplete) {
+          const analysisData = {
+            axis: axisResult,
+            primitives: primitiveResult,
+            thickness: thicknessResult,
+            profile: profilePoints,
+            constraints: profileAnalyzer.current.exportConstraints()
+          };
+          
+          onAnalysisComplete(analysisData);
+          
+          // Initialize constraint-aware reconstruction
+          const reconstructor = constraintReconstructor.current;
+          const constraintData = reconstructor.initialize(analysisData);
+          setConstrainedReconstruction(constraintData);
+        }
+        
+        // Clear progress after delay
+        setTimeout(() => setAnalysisProgress(null), 2000);
+        
+      } catch (error) {
+        console.error('Analysis failed:', error);
+        setAnalysisProgress('Analysis failed');
+        setTimeout(() => setAnalysisProgress(null), 2000);
+      }
+    };
+    
+    runAnalysis();
+  }, [mesh, onAnalysisComplete]);
+
+  // Extract profile curve from mesh
+  const extractProfileFromMesh = (mesh) => {
+    const positions = mesh.geometry.attributes.position;
+    const profilePoints = [];
+    
+    // Simple profile extraction - take cross-section at Y=0
+    for (let i = 0; i < positions.count; i++) {
+      const x = positions.getX(i);
+      const y = positions.getY(i);
+      const z = positions.getZ(i);
+      
+      // Only take points near the center plane (z ≈ 0)
+      if (Math.abs(z) < 0.1) {
+        profilePoints.push(new THREE.Vector2(Math.abs(x), y));
+      }
+    }
+    
+    // Sort by height and remove duplicates
+    profilePoints.sort((a, b) => a.y - b.y);
+    const uniqueProfile = [];
+    let lastY = -Infinity;
+    
+    profilePoints.forEach(point => {
+      if (point.y - lastY > 0.01) {
+        uniqueProfile.push(point);
+        lastY = point.y;
+      }
+    });
+    
+    return uniqueProfile;
+  };
+
+  // Export functions
+  const exportProfileDrawing = () => {
+    if (!profilePrimitives) return;
+    
+    const profilePoints = mesh ? extractProfileFromMesh(mesh) : [];
+    profileExporter.current.downloadSVG(profilePoints, profilePrimitives, {
+      title: 'ARCHIA Pottery Profile',
+      vesselId: `vessel_${Date.now()}`
+    });
+  };
+
+  const exportAnalysisData = () => {
+    if (!profilePrimitives) return;
+    
+    const profilePoints = mesh ? extractProfileFromMesh(mesh) : [];
+    const report = profileExporter.current.generateMeasurementReport(profilePoints, profilePrimitives);
+    
+    profileExporter.current.exportJSON(profilePoints, profilePrimitives, {
+      vesselId: `vessel_${Date.now()}`,
+      ...report
+    });
+  };
+
+  // Constraint-aware reconstruction functions
+  const generateConstrainedReconstruction = () => {
+    if (!constrainedReconstruction) return;
+    
+    try {
+      const reconstructor = constraintReconstructor.current;
+      const constrainedMesh = reconstructor.generateConstrainedMesh(
+        constrainedReconstruction.constraints,
+        {
+          resolution: 64,
+          height: 10,
+          baseRadius: 5,
+          method: 'constraint_driven'
+        }
+      );
+      
+      // Store the constrained mesh for visualization
+      setConstrainedReconstruction(prev => ({
+        ...prev,
+        constrainedMesh,
+        reconstructionDate: Date.now()
+      }));
+      
+      setAnalysisProgress('Constraint-aware reconstruction generated');
+      setTimeout(() => setAnalysisProgress(null), 2000);
+      
+    } catch (error) {
+      console.error('Constraint reconstruction failed:', error);
+      setAnalysisProgress('Reconstruction failed');
+      setTimeout(() => setAnalysisProgress(null), 2000);
+    }
+  };
+
+  const exportConstrainedReconstruction = () => {
+    if (!constrainedReconstruction?.constrainedMesh) return;
+    
+    constraintReconstructor.current.exportReconstruction(
+      constrainedReconstruction.constrainedMesh,
+      `constrained_reconstruction_${Date.now()}`
+    );
+  };
+
+  const toggleConstraints = () => {
+    setShowConstraints(!showConstraints);
+  };
+
+  // Update mesh stats
   useEffect(() => {
     if (mesh) {
       const vertexCount = mesh.geometry.attributes.position.count;
@@ -212,32 +400,17 @@ export default function ReconstructionViewer({ mesh, pointCloud = null, showPoin
   }, [contextLost]);
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+    <div className="relative w-full h-full">
       {contextLost && (
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          backgroundColor: "rgba(0,0,0,0.7)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 10,
-          borderRadius: "8px"
-        }}>
-          <div style={{
-            backgroundColor: "#333",
-            padding: "20px",
-            borderRadius: "8px",
-            textAlign: "center",
-            color: "#fff"
-          }}>
-            <div style={{ fontSize: "1.2em", marginBottom: "10px" }}>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10 rounded-lg">
+          <div className="bg-surface p-5 rounded-lg text-center text-white">
+            <div className="text-lg mb-2.5">
               ⚠️ Graphics Error
             </div>
-            <div style={{ color: "#aaa", marginBottom: "15px" }}>
+            <div className="text-gray-400 mb-4">
               WebGL context lost. Recovering...
             </div>
-            <div style={{ fontSize: "0.9em", color: "#666" }}>
+            <div className="text-sm text-gray-500">
               Attempt {retryCount + 1}
             </div>
           </div>
@@ -247,23 +420,16 @@ export default function ReconstructionViewer({ mesh, pointCloud = null, showPoin
       <Canvas
         key={`canvas-${retryCount}`}
         shadows
-        style={{ width: "100%", height: "100%" }}
+        className="w-full h-full"
         dpr={[1, 1.5]}
         gl={{
           antialias: true,
           alpha: true,
           powerPreference: "high-performance",
           failIfMajorPerformanceCaveat: false,
-          // Attempt to preserve the drawing buffer to help with context recovery
-          preserveDrawingBuffer: false,
-          // Reduce memory pressure
-          maxTextures: 16,
-          maxVertexUniforms: 4096
+          preserveDrawingBuffer: false
         }}
         onCreated={(state) => {
-          console.log("Canvas created, WebGL backend ready");
-          
-          // Handle context loss
           const canvas = state.gl.domElement;
           
           const handleContextLost = (e) => {
@@ -295,25 +461,184 @@ export default function ReconstructionViewer({ mesh, pointCloud = null, showPoin
         <Scene mesh={mesh} showPointCloud={showPointCloud} pointCloud={pointCloud} />
       </Canvas>
 
-      {/* Stats overlay */}
-      {stats && !contextLost && (
-        <div style={{
-          position: "absolute",
-          bottom: "10px",
-          left: "10px",
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
-          color: "#fff",
-          padding: "8px 12px",
-          borderRadius: "4px",
-          fontSize: "0.75em",
-          fontFamily: "monospace",
-          pointerEvents: "none"
-        }}>
-          <div>Vertices: {stats.vertices.toLocaleString()}</div>
-          <div>Faces: {stats.faces.toLocaleString()}</div>
-          <div>Type: {stats.type}</div>
+      {/* Analysis Progress */}
+      {analysisProgress && (
+        <div className="absolute top-2.5 left-2.5 bg-accent/90 text-ink px-4 py-2 rounded-lg text-sm font-medium z-20">
+          {analysisProgress}
         </div>
       )}
-    </div>
-  );
-}
+
+      {/* Analysis Controls */}
+      {showAnalysis && axisDetection && (
+        <div className="absolute top-2.5 right-2.5 bg-surface/95 text-ink p-4 rounded-lg z-20 max-w-xs">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-semibold text-sm">Analysis</h4>
+          <button 
+            onClick={() => setShowAnalysis(false)}
+            className="text-muted hover:text-ink text-xs"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Axis Detection Results */}
+        <div className="mb-4">
+          <div className="text-xs font-medium text-accent mb-1">Symmetry Axis</div>
+          <div className="text-xs text-muted">
+            Confidence: {(axisDetection.confidence * 100).toFixed(1)}%
+          </div>
+          {axisDetection.confidence > 0.7 && (
+            <div className="text-xs text-green-600">✓ Aligned</div>
+          )}
+        </div>
+
+        {/* Profile Primitives */}
+        {profilePrimitives && (
+          <div className="mb-4">
+            <div className="text-xs font-medium text-accent mb-2">Profile Primitives</div>
+            <div className="space-y-1">
+              {Object.entries(profilePrimitives).map(([key, primitive]) => {
+                if (!primitive || primitive.type === 'metadata') return null;
+                return (
+                  <div key={key} className="flex justify-between text-xs">
+                    <span className="capitalize text-muted">{key}</span>
+                    <span className={`${
+                      primitive.confidence > 0.7 ? 'text-green-600' : 'text-orange-600'
+                    }`}>
+                      {(primitive.confidence * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Thickness Profile */}
+        {thicknessProfile && (
+          <div className="mb-4">
+            <div className="text-xs font-medium text-accent mb-1">Thickness Analysis</div>
+            <div className="text-xs text-muted">
+              Mean: {thicknessProfile.metadata.meanThickness.toFixed(2)} cm
+            </div>
+            <div className="text-xs text-muted">
+              Range: {thicknessProfile.metadata.minThickness.toFixed(2)} - {thicknessProfile.metadata.maxThickness.toFixed(2)} cm
+            </div>
+            <div className="text-xs text-muted">
+              Quality: {(thicknessProfile.quality.overall * 100).toFixed(0)}%
+            </div>
+            {thicknessProfile.quality.overall > 0.7 && (
+              <div className="text-xs text-green-600">✓ Reliable</div>
+            )
+          </div>
+        )
+
+        {/* Export Controls */}
+        <div className="border-t border-border pt-3 space-y-2">
+          <button
+            onClick={exportProfileDrawing}
+            className="w-full px-3 py-1.5 bg-accent text-white rounded text-xs font-medium hover:bg-accentHover transition-colors"
+          >
+            Export Drawing
+          </button>
+          <button
+            onClick={exportAnalysisData}
+            className="w-full px-3 py-1.5 bg-surface2 text-ink rounded text-xs font-medium hover:bg-surface transition-colors"
+          >
+            Export Data
+          </button>
+          {constrainedReconstruction && (
+            <button
+              onClick={generateConstrainedReconstruction}
+              className="w-full px-3 py-1.5 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors"
+            >
+              Generate Reconstruction
+            </button>
+          )}
+          {constrainedReconstruction?.constrainedMesh && (
+            <button
+              onClick={exportConstrainedReconstruction}
+              className="w-full px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors"
+            >
+              Export Reconstruction
+            </button>
+          )}
+        </div>
+
+        {/* Constraint-Aware Reconstruction Status */}
+        {constrainedReconstruction && (
+          <div className="border-t border-border pt-3">
+            <div className="text-xs font-medium text-accent mb-2">Reconstruction</div>
+            <div className="text-xs text-muted">
+              Confidence: {(constrainedReconstruction.confidence * 100).toFixed(1)}%
+            </div>
+            <div className="text-xs text-muted">
+              Constraints: {constrainedReconstruction.metadata.totalConstraints}
+            </div>
+            {constrainedReconstruction.constrainedMesh && (
+              <div className="text-xs text-green-600">✓ Generated</div>
+            )}
+            <button
+              onClick={toggleConstraints}
+              className="mt-2 text-xs text-accent hover:text-accentHover transition-colors"
+            >
+              {showConstraints ? 'Hide' : 'Show'} Details
+            </button>
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* Constraints Detail Panel */}
+      {showConstraints && constrainedReconstruction && (
+        <div className="absolute top-2.5 right-72 bg-surface/95 text-ink p-4 rounded-lg z-20 max-w-xs">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-sm">Constraints</h4>
+            <button 
+              onClick={toggleConstraints}
+              className="text-muted hover:text-ink text-xs"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {Object.entries(constrainedReconstruction.constraints).map(([key, constraint]) => {
+            if (!constraint.enabled) return null;
+            return (
+              <div key={key} className="mb-2">
+                <div className="text-xs font-medium capitalize">{key}</div>
+                <div className="text-xs text-muted">
+                  Confidence: {(constraint.confidence * 100).toFixed(0)}%
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Show Analysis Toggle */}
+      {!showAnalysis && axisDetection && (
+        <button
+          onClick={() => setShowAnalysis(true)}
+          className="absolute top-2.5 right-2.5 bg-surface/95 text-ink px-3 py-1.5 rounded-lg text-xs font-medium z-20 hover:bg-surface transition-colors"
+        >
+          Show Analysis
+        </button>
+      )}
+
+    {/* Axis Visualization */}
+    {axisDetection && axisDetection.confidence > 0.7 && (
+      <div className="absolute bottom-2.5 right-2.5 bg-green-600/90 text-white px-3 py-2 rounded-lg text-xs font-medium z-20">
+        ✓ Symmetry Detected
+      </div>
+    )}
+
+    {/* Original Stats */}
+    {stats && !contextLost && (
+      <div className="absolute bottom-2.5 left-2.5 bg-black/70 text-white px-3 py-2 rounded text-xs font-mono pointer-events-none">
+        <div>Vertices: {stats.vertices.toLocaleString()}</div>
+        <div>Faces: {stats.faces.toLocaleString()}</div>
+        <div>Type: {stats.type}</div>
+      </div>
+    )}
+  </div>

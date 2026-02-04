@@ -30,49 +30,20 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
 
   if (selectedPuzzle) {
     return (
-      <div style={{
-        padding: '20px',
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}>
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '30px',
-          flexWrap: 'wrap',
-          gap: '15px'
-        }}>
+      <div className="p-5 max-w-[1200px] mx-auto">
+        <div className="flex flex-wrap items-center justify-between mb-7.5 gap-4">
           <div>
-            <h2 style={{ 
-              margin: '0 0 5px 0',
-              fontSize: '28px',
-              color: '#333'
-            }}>
+            <h2 className="m-0 mb-1.25 text-2xl text-ink">
               {selectedPuzzle.name}
             </h2>
-            <p style={{ 
-              margin: 0,
-              color: '#666',
-              fontSize: '14px'
-            }}>
+            <p className="m-0 text-muted text-sm">
               {selectedPuzzle.description}
             </p>
           </div>
           
           <button
             onClick={handleBackToGallery}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#757575',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontWeight: '500'
-            }}
+            className="px-5 py-2.5 bg-muted text-white rounded-md cursor-pointer text-base font-medium hover:bg-muted/80 transition-colors"
           >
             ← Back to Gallery
           </button>
@@ -113,181 +84,79 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
         </p>
       </div>
 
-      {/* Difficulty Filter */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '10px',
-        marginBottom: '30px',
-        flexWrap: 'wrap'
-      }}>
+      <div className="flex flex-wrap justify-center gap-2.5 mb-7.5">
         {["all", "easy", "medium", "hard"].map(level => (
           <button
             key={level}
             onClick={() => setDifficulty(level)}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: difficulty === level ? '#2196f3' : '#e0e0e0',
-              color: difficulty === level ? 'white' : '#333',
-              border: 'none',
-              borderRadius: '20px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              textTransform: 'capitalize',
-              transition: 'all 0.3s ease'
-            }}
+            className={`px-5 py-2.5 rounded-full cursor-pointer text-sm font-medium capitalize transition-all duration-300 ${
+              difficulty === level 
+                ? 'bg-accent text-white' 
+                : 'bg-surface text-ink hover:bg-surface2'
+            }`}
           >
             {level}
           </button>
         ))}
       </div>
 
-      {/* Puzzle Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-        gap: '25px',
-        marginBottom: '40px'
-      }}>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6 mb-10">
         {filteredPuzzles.map(puzzle => (
           <div
             key={puzzle.id}
             onClick={() => handleSelectPuzzle(puzzle)}
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              cursor: 'pointer',
-              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-              ':hover': {
-                transform: 'translateY(-5px)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
-              }
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-5px)';
-              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            }}
+            className="bg-surface rounded-xl overflow-hidden shadow-soft cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lift"
           >
-            {/* Image Preview */}
-            <div style={{
-              width: '100%',
-              height: '200px',
-              backgroundColor: '#f5f5f5',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden'
-            }}>
+            <div className="w-full h-50 bg-surface2 flex items-center justify-center overflow-hidden">
               <img
                 src={puzzle.src}
                 alt={puzzle.name}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
+                className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.style.display = 'none';
-                  e.target.parentElement.innerHTML = '<div style="color: #999; font-size: 48px;">🏺</div>';
+                  e.target.parentElement.innerHTML = '<div class="text-muted text-5xl">🏺</div>';
                 }}
               />
             </div>
 
-            {/* Info */}
-            <div style={{ padding: '15px' }}>
-              <h3 style={{ 
-                margin: '0 0 8px 0',
-                fontSize: '18px',
-                color: '#333'
-              }}>
+            <div className="p-4">
+              <h3 className="m-0 mb-2 text-lg text-ink">
                 {puzzle.name}
               </h3>
               
-              <p style={{
-                margin: '0 0 12px 0',
-                fontSize: '14px',
-                color: '#666',
-                lineHeight: '1.4'
-              }}>
+              <p className="m-0 mb-3 text-sm text-muted leading-relaxed">
                 {puzzle.description}
               </p>
 
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <span style={{
-                  display: 'inline-block',
-                  padding: '4px 12px',
-                  backgroundColor: 
-                    puzzle.difficulty === 'easy' ? '#4caf50' :
-                    puzzle.difficulty === 'medium' ? '#ff9800' : '#f44336',
-                  color: 'white',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '500',
-                  textTransform: 'capitalize'
-                }}>
+              <div className="flex justify-between items-center">
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-clay text-white">
                   {puzzle.difficulty}
                 </span>
 
-                <span style={{
-                  fontSize: '13px',
-                  color: '#999'
-                }}>
-                  {puzzle.rows} × {puzzle.cols} pieces
+                <span className="text-xs text-muted">
+                  {puzzle.pieces} pieces
                 </span>
               </div>
             </div>
           </div>
         ))}
       </div>
-
       {filteredPuzzles.length === 0 && (
-        <div style={{
-          textAlign: 'center',
-          padding: '60px 20px',
-          color: '#999'
-        }}>
-          <p style={{ fontSize: '18px' }}>
-            No puzzles found for this difficulty level
-          </p>
+        <div className="text-center py-15 px-5 text-muted">
+          <p className="text-lg">No puzzles found for this difficulty level</p>
         </div>
       )}
 
-      {/* Instructions */}
-      <div style={{
-        backgroundColor: '#f5f5f5',
-        padding: '30px',
-        borderRadius: '12px',
-        marginTop: '40px'
-      }}>
-        <h3 style={{ 
-          margin: '0 0 15px 0',
-          fontSize: '20px',
-          color: '#333'
-        }}>
+      <div className="bg-surface p-7.5 rounded-xl mt-10">
+        <h3 className="m-0 mb-4 text-lg text-ink">
           How to Play
         </h3>
-        <ul style={{
-          margin: 0,
-          paddingLeft: '20px',
-          color: '#666',
-          lineHeight: '1.8'
-        }}>
-          <li>Select a puzzle from the gallery above</li>
-          <li>Drag and drop pieces to assemble the image</li>
-          <li>Pieces will snap into place when positioned correctly</li>
-          <li>Use the hint button to briefly see the complete image</li>
-          <li>Track your progress with the completion percentage</li>
+        <ul className="m-0 pl-5 text-muted leading-relaxed">
+          <li>Choose a difficulty level to filter puzzles</li>
+          <li>Click on any puzzle to start playing</li>
+          <li>Drag and drop pieces to reconstruct the artifact</li>
+          <li>Use hints if you get stuck</li>
+          <li>Complete the puzzle to see your time and score</li>
         </ul>
       </div>
     </div>
