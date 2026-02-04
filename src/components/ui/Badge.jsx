@@ -1,29 +1,46 @@
 import React from 'react';
 
-const Badge = React.forwardRef(({ className, variant = 'default', ...props }, ref) => {
-  const variants = {
-    default: 'border-transparent bg-primary text-primary-foreground hover:bg-primary/80',
-    secondary: 'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
-    destructive: 'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
-    outline: 'text-foreground',
-    success: 'border-transparent bg-green-500 text-white hover:bg-green-600',
-    warning: 'border-transparent bg-amber-500 text-white hover:bg-amber-600',
-    info: 'border-transparent bg-blue-500 text-white hover:bg-blue-600',
-  };
+const badgeVariants = {
+  variant: {
+    neutral: 'bg-surface2 text-ink border border-border',
+    success: 'bg-green-100 text-green-800 border border-green-200',
+    warning: 'bg-amber-100 text-amber-800 border border-amber-200',
+    error: 'bg-red-100 text-red-800 border border-red-200',
+    info: 'bg-blue-100 text-blue-800 border border-blue-200',
+  },
+  size: {
+    sm: 'px-2 py-0.5 text-xs',
+    md: 'px-2.5 py-0.5 text-xs',
+    lg: 'px-3 py-1 text-sm',
+  }
+};
+
+const Badge = React.forwardRef(({ 
+  className, 
+  variant = 'neutral', 
+  size = 'md', 
+  children, 
+  ...props 
+}, ref) => {
+  const variantClass = badgeVariants.variant[variant] || badgeVariants.variant.neutral;
+  const sizeClass = badgeVariants.size[size] || badgeVariants.size.md;
 
   return (
     <div
       ref={ref}
       className={`
-        inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold
-        transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2
-        ${variants[variant] || variants.default} ${className}
+        inline-flex items-center rounded-full border font-medium
+        transition-colors duration-150
+        focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1
+        ${variantClass} ${sizeClass} ${className}
       `}
       {...props}
-    />
+    >
+      {children}
+    </div>
   );
 });
 
 Badge.displayName = 'Badge';
 
-export { Badge };
+export { Badge, badgeVariants };

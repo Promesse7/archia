@@ -1,6 +1,6 @@
 import React from 'react';
 
-const buttonVariants = {
+const iconButtonVariants = {
   variant: {
     primary: 'bg-accent text-white hover:bg-accentHover active:bg-accentActive disabled:bg-accent/50 disabled:text-white/70',
     secondary: 'bg-surface text-ink border border-border hover:bg-surface2 active:bg-surface3 disabled:bg-surface/50 disabled:text-muted',
@@ -8,28 +8,30 @@ const buttonVariants = {
     danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 disabled:bg-red-600/50 disabled:text-white/70',
   },
   size: {
-    sm: 'h-8 px-3 text-sm rounded-md',
-    md: 'h-10 px-4 text-sm rounded-md',
-    lg: 'h-12 px-6 text-base rounded-lg',
-  },
+    sm: 'w-8 h-8',
+    md: 'w-10 h-10',
+    lg: 'w-12 h-12',
+  }
 };
 
-const Button = React.forwardRef(({ 
+const IconButton = React.forwardRef(({ 
   className, 
-  variant = 'primary', 
+  variant = 'secondary', 
   size = 'md', 
   disabled = false, 
   onClick, 
-  children, 
+  icon, 
+  tooltip,
+  children,
   ...props 
 }, ref) => {
-  const variantClass = buttonVariants.variant[variant] || buttonVariants.variant.primary;
-  const sizeClass = buttonVariants.size[size] || buttonVariants.size.md;
+  const variantClass = iconButtonVariants.variant[variant] || iconButtonVariants.variant.secondary;
+  const sizeClass = iconButtonVariants.size[size] || iconButtonVariants.size.md;
   
-  return (
+  const button = (
     <button
       className={`
-        inline-flex items-center justify-center whitespace-nowrap font-medium
+        inline-flex items-center justify-center rounded-md font-medium
         transition-all duration-150 ease-in-out
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
         disabled:pointer-events-none disabled:cursor-not-allowed
@@ -39,13 +41,16 @@ const Button = React.forwardRef(({
       ref={ref}
       disabled={disabled}
       onClick={disabled ? undefined : onClick}
+      title={tooltip}
       {...props}
     >
-      {children}
+      {icon || children}
     </button>
   );
+
+  return button;
 });
 
-Button.displayName = 'Button';
+IconButton.displayName = 'IconButton';
 
-export { Button, buttonVariants };
+export { IconButton, iconButtonVariants };

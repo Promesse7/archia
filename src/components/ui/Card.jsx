@@ -1,21 +1,37 @@
 import React from 'react';
 
-const Card = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={`
-      rounded-lg border bg-white text-zinc-950 shadow-sm
-      ${className}
-    `}
-    {...props}
-  />
-));
+const cardVariants = {
+  padding: {
+    none: '',
+    sm: 'p-4',
+    md: 'p-6',
+    lg: 'p-8',
+  }
+};
+
+const Card = React.forwardRef(({ className, padding = 'md', children, ...props }, ref) => {
+  const paddingClass = cardVariants.padding[padding] || cardVariants.padding.md;
+  
+  return (
+    <div
+      ref={ref}
+      className={`
+        rounded-xl border border-border bg-surface text-ink shadow-lg
+        transition-shadow duration-200 hover:shadow-xl
+        ${paddingClass} ${className}
+      `}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
 
 const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={`
-      flex flex-col space-y-1.5 p-6
+      flex flex-col space-y-2 pb-4 border-b border-border/50
       ${className}
     `}
     {...props}
@@ -26,7 +42,7 @@ const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
   <h3
     ref={ref}
     className={`
-      text-2xl font-semibold leading-none tracking-tight
+      text-xl font-semibold leading-tight text-ink
       ${className}
     `}
     {...props}
@@ -37,7 +53,7 @@ const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
   <p
     ref={ref}
     className={`
-      text-sm text-zinc-500
+      text-sm text-muted leading-relaxed
       ${className}
     `}
     {...props}
@@ -48,7 +64,7 @@ const CardContent = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={`
-      p-6 pt-0
+      pt-4
       ${className}
     `}
     {...props}
@@ -59,7 +75,7 @@ const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={`
-      flex items-center p-6 pt-0
+      flex items-center justify-between pt-4 mt-4 border-t border-border/50
       ${className}
     `}
     {...props}
@@ -73,4 +89,4 @@ CardDescription.displayName = 'CardDescription';
 CardContent.displayName = 'CardContent';
 CardFooter.displayName = 'CardFooter';
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, cardVariants };

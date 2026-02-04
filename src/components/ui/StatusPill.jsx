@@ -1,37 +1,55 @@
 import React from 'react';
-import { Badge } from './Badge';
+import { Badge, badgeVariants } from './Badge';
 
-const StatusPill = ({ status, variant = 'default', className, ...props }) => {
+const StatusPill = ({ status, message, className, ...props }) => {
   const getStatusVariant = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'ready':
-      case 'active':
-      case 'complete':
+    switch (status) {
+      case 'idle':
+        return 'neutral';
+      case 'loading':
+        return 'warning';
       case 'success':
         return 'success';
-      case 'processing':
-      case 'loading':
-      case 'pending':
-        return 'warning';
       case 'error':
-      case 'failed':
-      case 'offline':
-        return 'destructive';
+        return 'error';
       default:
-        return variant;
+        return 'neutral';
     }
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'idle':
+        return '●';
+      case 'loading':
+        return '⟳';
+      case 'success':
+        return '✓';
+      case 'error':
+        return '✕';
+      default:
+        return '●';
+    }
+  };
+
+  const variant = getStatusVariant(status);
+  const icon = getStatusIcon(status);
+  const isLoading = status === 'loading';
+
   return (
     <Badge
-      variant={getStatusVariant(status)}
+      variant={variant}
       className={`
-        capitalize font-medium
+        flex items-center gap-1.5
+        ${isLoading ? 'animate-pulse' : ''}
         ${className}
       `}
       {...props}
     >
-      {status}
+      <span className={`${isLoading ? 'animate-spin' : ''}`}>
+        {icon}
+      </span>
+      {message || status}
     </Badge>
   );
 };
