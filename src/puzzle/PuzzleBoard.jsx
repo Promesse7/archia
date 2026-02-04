@@ -422,18 +422,9 @@ export default function PuzzleBoard({
   if (imageError) {
     console.log('PuzzleBoard: Rendering error state');
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '400px',
-        fontSize: '18px',
-        color: '#f44336',
-        flexDirection: 'column',
-        gap: '20px'
-      }}>
+      <div className="flex flex-col items-center justify-center h-96 text-red-600 text-lg gap-5">
         <div>❌ Failed to load puzzle image</div>
-        <div style={{ fontSize: '14px', color: '#666' }}>
+        <div className="text-sm text-muted">
           Please check the image source and try again
         </div>
       </div>
@@ -446,70 +437,29 @@ export default function PuzzleBoard({
   const progress = calculateProgress();
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center',
-      gap: '20px',
-      padding: '20px',
-      maxWidth: '100vw',
-      overflow: 'hidden'
-    }}>
-      {/* Header with piece count */}
-      <div style={{ textAlign: 'center' }}>
-        <h2 style={{ 
-          margin: '0 0 10px 0',
-          fontSize: 'clamp(20px, 4vw, 28px)',
-          color: '#333'
-        }}>
+    <div className="flex flex-col items-center gap-5 p-5 max-w-screen overflow-hidden">
+      <div className="text-center">
+        <h2 className="m-0 mb-2.5 text-[clamp(20px,4vw,28px)] text-ink">
           🏺 Archaeological Puzzle
         </h2>
-        <p style={{ 
-          margin: 0,
-          color: '#666',
-          fontSize: 'clamp(14px, 2.5vw, 16px)'
-        }}>
-          {rows} × {cols} = {rows * cols} pieces • {rows * cols <= 16 ? 'Easy' : rows * cols <= 36 ? 'Medium' : 'Hard'}
+        <p className="m-0 text-muted text-[clamp(14px,2.5vw,16px)]">
+          Drag pieces to reconstruct the artifact
         </p>
       </div>
-
       {/* Progress Bar */}
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '600px',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          width: '100%',
-          height: '24px',
-          backgroundColor: '#e0e0e0',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          marginBottom: '8px',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{
-            width: `${progress}%`,
-            height: '100%',
-            backgroundColor: progress === 100 ? '#4caf50' : '#2196f3',
-            transition: 'width 0.5s ease',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '12px',
-            fontWeight: 'bold'
-          }}>
+      <div className="w-full max-w-[600px] text-center">
+        <div className="relative w-full h-6 bg-surface rounded-lg mb-2 shadow-inner">
+          <progress 
+            className="absolute inset-0 w-full h-6 [&::-webkit-progress-bar]:bg-surface [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-accent [&::-webkit-progress-value]:to-accentHover rounded-lg"
+            value={progress}
+            max={100}
+          />
+          <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-ink mix-blend-difference">
             {progress > 10 && `${progress}%`}
           </div>
         </div>
-        <div style={{
-          fontSize: 'clamp(12px, 2vw, 14px)',
-          color: '#666',
-          fontWeight: '500'
-        }}>
-          {progress === 100 ? '🎉 Complete!' : `${progress}% Complete • ${pieces.filter(p => p.currentPosition === p.correctPosition).length} of ${pieces.length} pieces in place`}
+        <div className="text-[clamp(12px,2vw,14px)] text-muted font-medium">
+          {pieces.filter(p => p?.snapped).length} of {pieces.length} pieces placed
         </div>
       </div>
 

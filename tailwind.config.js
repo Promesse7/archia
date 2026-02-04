@@ -1,3 +1,5 @@
+import { designTokens } from './src/design/design-tokens.js';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -8,34 +10,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Archaeology-inspired palette
-        zinc: {
-          50: '#fafafa',
-          100: '#f4f4f5',
-          200: '#e4e4e7',
-          300: '#d4d4d8',
-          400: '#a1a1aa',
-          500: '#71717a',
-          600: '#52525b',
-          700: '#3f3f46',
-          800: '#27272a',
-          850: '#1a1a1a',
-          900: '#18181b',
-          950: '#09090b',
-        },
-        amber: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
-        },
-        // Fragment type colors
+        background: designTokens.colors.charcoal[950],
+        surface: designTokens.colors.charcoal[900],
+        surface2: designTokens.colors.charcoal[850],
+        border: designTokens.colors.slate[700],
+        muted: designTokens.colors.slate[500],
+        accent: designTokens.colors.ochre[500],
+        accentHover: designTokens.colors.ochre[400],
+        clay: designTokens.colors.clay[500],
+        bronze: designTokens.colors.bronze[500],
+        ink: designTokens.colors.ink[800],
+        inkLight: designTokens.colors.ink[700],
+        // Keep legacy fragment colors for compatibility
         fragment: {
           rim: '#4caf50',
           body: '#2196f3',
@@ -43,16 +29,11 @@ export default {
           unknown: '#71717a',
         }
       },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
-      spacing: {
-        '18': '4.5rem',
-        '88': '22rem',
-      },
-      borderRadius: {
-        '4xl': '2rem',
-      },
+      fontFamily: designTokens.typography.fontFamily,
+      fontSize: designTokens.typography.fontSize,
+      spacing: designTokens.spacing,
+      borderRadius: designTokens.radius,
+      boxShadow: designTokens.shadows,
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',

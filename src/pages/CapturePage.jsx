@@ -69,31 +69,29 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Page header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-white">
+          <h1 className="text-headline font-bold text-ink">
             Capture Fragment
           </h1>
-          <p className="text-zinc-400 text-lg">
+          <p className="text-body text-muted">
             Photograph or upload a pottery fragment for AI analysis
           </p>
         </div>
 
         {/* Processing progress overlay */}
         {processingProgress && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/95 border-2 border-amber-500 rounded-xl p-8 text-center z-50 min-w-[320px] shadow-2xl">
-            <h3 className="mt-0 text-amber-500">
+          <div className="fixed inset-0 flex items-center justify-center bg-background/95 border-2 border-accent rounded-xl p-8 text-center z-50 min-w-[320px] shadow-lift">
+            <h3 className="mt-0 text-accent">
               {processingProgress.stage}
             </h3>
-            <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden mb-3">
-              <div
-                className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
-                style={{ width: `${processingProgress.percent}%` }}
-              />
-            </div>
-            <div className="text-zinc-400">
+            <progress 
+              className="w-full h-2 bg-surface rounded-full overflow-hidden mb-3 [&::-webkit-progress-bar]:bg-surface [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-accent [&::-webkit-progress-value]:to-accentHover transition-all duration-300"
+              value={processingProgress.percent}
+              max={100}
+            />
+            <div className="text-muted">
               {processingProgress.percent.toFixed(0)}%
             </div>
           </div>

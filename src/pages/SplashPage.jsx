@@ -40,38 +40,30 @@ export default function SplashPage({ onReady }) {
   }, [onReady]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center text-white">
-      {/* Minimal branding */}
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center text-ink">
       <div className="text-center space-y-8">
-        <h1 className="text-6xl font-bold bg-gradient-to-r from-amber-500 to-amber-600 bg-clip-text text-transparent">
+        <h1 className="text-title font-bold bg-gradient-to-r from-accent to-accentHover bg-clip-text text-transparent">
           ARCHIA
         </h1>
         
-        <p className="text-zinc-400 text-lg max-w-md">
+        <p className="text-body text-muted max-w-md">
           AI-Powered Archaeological Reconstruction
         </p>
 
-        {/* Non-blocking progress indicator */}
         <div className="w-64 space-y-3">
-          <div className="text-zinc-500 text-sm text-center">
-            {stage}
-          </div>
+          <div className="text-label text-muted text-center">{stage}</div>
           
-          <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+          <progress 
+            className="w-full h-1 bg-surface rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-surface [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-accent [&::-webkit-progress-value]:to-accentHover transition-all duration-500"
+            value={progress}
+            max={100}
+          />
           
-          <div className="text-zinc-600 text-xs text-center">
-            {progress}%
-          </div>
+          <div className="text-label text-muted text-center">{progress}%</div>
         </div>
 
-        {/* Ready state */}
         {isReady && (
-          <div className="text-zinc-500 text-sm animate-pulse">
+          <div className="text-label text-muted animate-pulse">
             Initializing workspace...
           </div>
         )}

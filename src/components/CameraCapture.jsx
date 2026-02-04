@@ -173,8 +173,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover transform scale-x-[-1]"
-          style={{ display: stream ? "block" : "none" }}
+          className={`w-full h-full object-cover transform scale-x-[-1] ${stream ? "block" : "hidden"}`}
         />
 
         {!stream && !error && (
