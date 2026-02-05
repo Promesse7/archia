@@ -1,7 +1,7 @@
 import React from 'react';
-import { Badge, badgeVariants } from './Badge';
+import { Badge } from './Badge';
 
-const StatusPill = ({ status, message, className, ...props }) => {
+const StatusPill = React.forwardRef(({ status, message, className, ...props }, ref) => {
   const getStatusVariant = (status) => {
     switch (status) {
       case 'idle':
@@ -17,41 +17,37 @@ const StatusPill = ({ status, message, className, ...props }) => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'idle':
-        return '●';
-      case 'loading':
-        return '⟳';
-      case 'success':
-        return '✓';
-      case 'error':
-        return '✕';
-      default:
-        return '●';
-    }
-  };
-
   const variant = getStatusVariant(status);
-  const icon = getStatusIcon(status);
   const isLoading = status === 'loading';
 
   return (
     <Badge
+      ref={ref}
       variant={variant}
       className={`
-        flex items-center gap-1.5
+        flex items-center gap-2
+        transition-all duration-[150ms] ease-out
         ${isLoading ? 'animate-pulse' : ''}
         ${className}
       `}
       {...props}
     >
-      <span className={`${isLoading ? 'animate-spin' : ''}`}>
-        {icon}
+      <div className={`
+        w-2 h-2 rounded-full
+        transition-all duration-[150ms] ease-out
+        ${isLoading ? 'bg-amber-400 animate-ping' : ''}
+        ${status === 'success' ? 'bg-green-400' : ''}
+        ${status === 'error' ? 'bg-red-400' : ''}
+        ${status === 'idle' ? 'bg-zinc-400' : ''}
+      `} />
+      
+      <span className="transition-opacity duration-[150ms] ease-out">
+        {message || status}
       </span>
-      {message || status}
     </Badge>
   );
-};
+});
+
+StatusPill.displayName = 'StatusPill';
 
 export { StatusPill };

@@ -1,18 +1,17 @@
 import React from 'react';
 
 const badgeVariants = {
-  variant: {
-    neutral: 'bg-surface2 text-ink border border-border',
-    success: 'bg-green-100 text-green-800 border border-green-200',
-    warning: 'bg-amber-100 text-amber-800 border border-amber-200',
-    error: 'bg-red-100 text-red-800 border border-red-200',
-    info: 'bg-blue-100 text-blue-800 border border-blue-200',
-  },
-  size: {
-    sm: 'px-2 py-0.5 text-xs',
-    md: 'px-2.5 py-0.5 text-xs',
-    lg: 'px-3 py-1 text-sm',
-  }
+  neutral: 'bg-zinc-700 text-zinc-200 border border-zinc-600',
+  success: 'bg-green-500/20 text-green-400 border border-green-500/30',
+  warning: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+  error: 'bg-red-500/20 text-red-400 border border-red-500/30',
+  info: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+};
+
+const badgeSizes = {
+  sm: 'px-2 py-0.5 text-xs font-medium',
+  md: 'px-2.5 py-1 text-sm font-medium',
+  lg: 'px-3 py-1.5 text-base font-medium',
 };
 
 const Badge = React.forwardRef(({ 
@@ -22,22 +21,22 @@ const Badge = React.forwardRef(({
   children, 
   ...props 
 }, ref) => {
-  const variantClass = badgeVariants.variant[variant] || badgeVariants.variant.neutral;
-  const sizeClass = badgeVariants.size[size] || badgeVariants.size.md;
+  const variantClass = badgeVariants[variant] || badgeVariants.neutral;
+  const sizeClass = badgeSizes[size] || badgeSizes.md;
 
   return (
-    <div
+    <span
       ref={ref}
       className={`
-        inline-flex items-center rounded-full border font-medium
-        transition-colors duration-150
-        focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-1
+        inline-flex items-center justify-center rounded-full border font-medium
+        transition-all duration-[200ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
+        focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 focus:ring-offset-zinc-900
         ${variantClass} ${sizeClass} ${className}
       `}
       {...props}
     >
       {children}
-    </div>
+    </span>
   );
 });
 

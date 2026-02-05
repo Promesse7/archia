@@ -248,7 +248,27 @@ export class PointCloudGenerator {
    * For production, use libraries like three-csg or hull.js
    */
   static alphaShapeGeometry(vertices, alpha = 0.5) {
-    const geometry = new THREE.ConvexGeometry(vertices);
+    const geometry = new THREE.BufferGeometry();
+    
+    if (vertices.length < 3) {
+      return geometry;
+    }
+    
+    const positions = [];
+    const indices = [];
+    
+    vertices.forEach(vertex => {
+      positions.push(vertex.x, vertex.y, vertex.z);
+    });
+    
+    for (let i = 1; i < vertices.length - 1; i++) {
+      indices.push(0, i, i + 1);
+    }
+    
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    
     return geometry;
   }
 }

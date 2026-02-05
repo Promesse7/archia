@@ -1,21 +1,38 @@
-import React, { useState } from 'react';
-import CameraCapture from '../components/CameraCapture';
-import { Card, CardHeader, CardTitle, CardContent, Button } from '../components/ui';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Card, CardContent, Button, StatusPill, SectionHeader } from '../components/ui';
+import { LazyCameraCapture } from '../components/ui/LazyCameraCapture';
+import { useMemoryManager } from '../utils/memoryManager';
 import { getEnhancedPipeline } from '../pipeline/enhancedPipeline';
 
 export default function CapturePage({ onNavigate, onFragmentAdded }) {
   const [capturedFragment, setCapturedFragment] = useState(null);
   const [processingProgress, setProcessingProgress] = useState(null);
+  const [cameraStatus, setCameraStatus] = useState('idle');
+  const [cameraReady, setCameraReady] = useState(false);
+
+  // Initialize camera when screen mounts
+  useEffect(() => {
+    setCameraStatus('loading');
+    // Camera will be initialized by CameraCapture component
+    const timer = setTimeout(() => {
+      setCameraReady(true);
+      setCameraStatus('ready');
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleCaptureResult = async (result) => {
     console.log("Fragment captured:", result);
 
     if (result.error) {
       console.error("Capture error:", result.error);
+      setCameraStatus('error');
       return;
     }
 
     try {
+      setCameraStatus('processing');
       setProcessingProgress({ stage: "Processing fragment...", percent: 0 });
 
       const pipeline = await getEnhancedPipeline((progress) => {
@@ -48,9 +65,11 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
       };
 
       setCapturedFragment(fragmentData);
+      setCameraStatus('success');
       setProcessingProgress(null);
     } catch (err) {
       console.error("Processing error:", err);
+      setCameraStatus('error');
       setProcessingProgress(null);
     }
   };
@@ -59,6 +78,7 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
     if (capturedFragment) {
       onFragmentAdded(capturedFragment);
       setCapturedFragment(null);
+      setCameraStatus('ready');
       // Navigate back to home to show updated count
       onNavigate('home');
     }
@@ -66,137 +86,168 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
 
   const handleRetake = () => {
     setCapturedFragment(null);
+    setCameraStatus('ready');
+  };
+
+  const getStatusMessage = () => {
+    switch (cameraStatus) {
+      case 'loading':
+        return 'Initializing camera...';
+      case 'processing':
+        return processingProgress?.stage || 'Processing fragment...';
+      case 'success':
+        return 'Fragment captured successfully';
+      case 'error':
+        return 'Capture failed';
+      default:
+        return 'Ready to capture';
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-headline font-bold text-ink">
-            Capture Fragment
-          </h1>
-          <p className="text-body text-muted">
-            Photograph or upload a pottery fragment for AI analysis
-          </p>
-        </div>
+    <div className="min-h-screen bg-zinc-950 px-6 py-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Section Header */}
+        <SectionHeader
+          title="Capture Fragment"
+          subtitle="Analyze pottery fragments with AI vision"
+        />
 
-        {/* Processing progress overlay */}
-        {processingProgress && (
-          <div className="fixed inset-0 flex items-center justify-center bg-background/95 border-2 border-accent rounded-xl p-8 text-center z-50 min-w-[320px] shadow-lift">
-            <h3 className="mt-0 text-accent">
-              {processingProgress.stage}
-            </h3>
-            <progress 
-              className="w-full h-2 bg-surface rounded-full overflow-hidden mb-3 [&::-webkit-progress-bar]:bg-surface [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-accent [&::-webkit-progress-value]:to-accentHover transition-all duration-300"
-              value={processingProgress.percent}
-              max={100}
-            />
-            <div className="text-muted">
-              {processingProgress.percent.toFixed(0)}%
-            </div>
-          </div>
-        )}
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Camera section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Camera Capture</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CameraCapture
-                onResult={handleCaptureResult}
-                modelsReady={true} // Models are preloaded in splash
-              />
-            </CardContent>
-          </Card>
-
-          {/* Preview/Results section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {capturedFragment ? 'Fragment Analysis' : 'Waiting for Capture'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {capturedFragment ? (
-                <div className="space-y-6">
-                  {/* Image preview */}
-                  <img
-                    src={capturedFragment.image}
-                    alt="Captured fragment"
-                    className="w-full rounded-lg"
+        {/* Camera Card */}
+        <Card className="bg-zinc-900/80 border-zinc-800/50">
+          <CardContent className="p-8">
+            <div className="space-y-6">
+              {/* Camera Feed */}
+              <div className="relative aspect-video bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden">
+                {!capturedFragment ? (
+                  <LazyCameraCapture 
+                    onResult={handleCaptureResult} 
+                    modelsReady={cameraReady}
                   />
-
-                  {/* Analysis results */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-zinc-800 p-3 rounded-lg">
-                      <div className="text-zinc-400 text-sm">Type</div>
-                      <div className="font-bold text-lg text-amber-500">
-                        {capturedFragment.classification?.fragmentType || "unknown"}
-                      </div>
-                    </div>
-
-                    <div className="bg-zinc-800 p-3 rounded-lg">
-                      <div className="text-zinc-400 text-sm">Confidence</div>
-                      <div className="font-bold text-lg">
-                        {(
-                          (capturedFragment.classification?.confidence || 0) * 100
-                        ).toFixed(1)}%
-                      </div>
-                    </div>
+                ) : (
+                  <div className="w-full h-full">
+                    <img 
+                      src={capturedFragment.image} 
+                      alt="Captured fragment"
+                      className="w-full h-full object-cover rounded-xl"
+                    />
                   </div>
+                )}
+              </div>
 
-                  <div className="bg-zinc-800 p-3 rounded-lg">
-                    <div className="text-zinc-400 text-sm">Processing Time</div>
-                    <div className="font-bold">
-                      {capturedFragment.processingTime?.toFixed(0) || 0}ms
-                    </div>
-                  </div>
+              {/* Status Indicator */}
+              <div className="flex justify-center">
+                <StatusPill 
+                  status={cameraStatus}
+                  message={getStatusMessage()}
+                />
+              </div>
 
-                  <div className="bg-zinc-800 p-3 rounded-lg">
-                    <div className="text-zinc-400 text-sm">Points Generated</div>
-                    <div className="font-bold">
-                      {capturedFragment.pointCloud?.length?.toLocaleString() || 0}
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex space-x-4">
-                    <Button
+              {/* Controls Panel */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                {!capturedFragment ? (
+                  <>
+                    <Button 
+                      variant="primary" 
+                      size="lg"
+                      disabled={cameraStatus === 'processing' || cameraStatus === 'loading'}
+                      className="px-8"
+                    >
+                      Capture
+                    </Button>
+                    
+                    <Button 
+                      variant="secondary" 
+                      size="lg"
+                      disabled={cameraStatus === 'processing'}
+                      className="px-8"
+                    >
+                      Upload
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="primary" 
+                      size="lg"
                       onClick={handleAddToSession}
-                      className="flex-1"
+                      className="px-8"
                     >
                       Add to Session
                     </Button>
-                    <Button
+                    
+                    <Button 
+                      variant="secondary" 
+                      size="lg"
                       onClick={handleRetake}
-                      variant="outline"
-                      className="flex-1"
+                      className="px-8"
                     >
                       Retake
                     </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Processing Progress Overlay */}
+              {processingProgress && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/95 border-2 border-amber-500 rounded-xl p-8 text-center z-50 min-w-[320px] shadow-2xl">
+                  <h3 className="mt-0 text-amber-500">
+                    {processingProgress.stage}
+                  </h3>
+                  <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden mb-3">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
+                      style={{ width: `${processingProgress.percent}%` }}
+                    />
+                  </div>
+                  <div className="text-zinc-400">
+                    {processingProgress.percent.toFixed(0)}%
                   </div>
                 </div>
-              ) : (
-                <div className="py-12 text-center text-zinc-500">
-                  <div className="text-6xl mb-4">📸</div>
-                  <p>Capture a fragment to see analysis results</p>
-                </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Fragment Info (if captured) */}
+        {capturedFragment && (
+          <Card className="bg-zinc-900/80 border-zinc-800/50">
+            <CardHeader>
+              <CardTitle className="text-white">Fragment Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-zinc-500">Type:</span>
+                  <div className="font-medium text-white mt-1">
+                    {capturedFragment.classification?.fragmentType || "unknown"}
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="text-zinc-500">Confidence:</span>
+                  <div className="font-medium text-white mt-1">
+                    {((capturedFragment.classification?.confidence || 0) * 100).toFixed(1)}%
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="text-zinc-500">Points:</span>
+                  <div className="font-medium text-white mt-1">
+                    {capturedFragment.pointCloud?.length || 0}
+                  </div>
+                </div>
+                
+                <div>
+                  <span className="text-zinc-500">Processing:</span>
+                  <div className="font-medium text-white mt-1">
+                    {(capturedFragment.processingTime / 1000).toFixed(1)}s
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Navigation hint */}
-        <div className="text-center">
-          <Button
-            onClick={() => onNavigate('home')}
-            variant="ghost"
-          >
-            ← Back to Home
-          </Button>
-        </div>
+        )}
       </div>
     </div>
   );

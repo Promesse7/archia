@@ -1,20 +1,21 @@
 import React from 'react';
 
-const SectionHeader = ({ title, subtitle, action, className, ...props }) => {
+const SectionHeader = React.forwardRef(({ title, subtitle, action, className, ...props }, ref) => {
   return (
     <div
+      ref={ref}
       className={`
-        flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/50
+        flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/50
         ${className}
       `}
       {...props}
     >
       <div className="space-y-1">
-        <h2 className="text-2xl font-semibold text-ink leading-tight">
+        <h2 className="text-2xl font-bold text-white leading-tight">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-sm text-muted leading-relaxed max-w-2xl">
+          <p className="text-sm text-zinc-400 leading-relaxed max-w-2xl">
             {subtitle}
           </p>
         )}
@@ -26,6 +27,8 @@ const SectionHeader = ({ title, subtitle, action, className, ...props }) => {
       )}
     </div>
   );
-};
+});
+
+SectionHeader.displayName = 'SectionHeader';
 
 export { SectionHeader };

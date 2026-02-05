@@ -71,8 +71,10 @@ const AppShell = ({ children }) => {
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
+      document.body.classList.add('bg-zinc-950', 'text-white');
     } else {
       document.documentElement.classList.remove('dark');
+      document.body.classList.remove('bg-zinc-950', 'text-white');
     }
   }, [theme]);
 
@@ -93,7 +95,7 @@ const AppShell = ({ children }) => {
   return (
     <ThemeContext.Provider value={themeValue}>
       <NavigationContext.Provider value={navigationValue}>
-        <div className={`min-h-screen bg-background text-foreground ${theme}`}>
+        <div className="min-h-screen bg-zinc-950 text-white overflow-hidden">
           {children}
         </div>
       </NavigationContext.Provider>

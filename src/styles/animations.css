@@ -1,0 +1,176 @@
+/* ARCHIA Animation System */
+/* Consistent, performant, and intentional animations */
+
+:root {
+  /* Animation durations */
+  --animation-duration-fast: 150ms;
+  --animation-duration-normal: 200ms;
+  --animation-duration-slow: 300ms;
+  --animation-duration-slower: 400ms;
+  
+  /* Animation easing functions */
+  --animation-easing-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --animation-easing-snappy: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-easing-gentle: cubic-bezier(0.23, 1, 0.32, 1);
+  --animation-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Animation delays */
+  --animation-delay-short: 100ms;
+  --animation-delay-normal: 200ms;
+  --animation-delay-long: 300ms;
+}
+
+/* Utility animation classes */
+.animate-fade-in {
+  animation: fadeIn var(--animation-duration-normal) var(--animation-easing-smooth);
+}
+
+.animate-slide-up {
+  animation: slideUp var(--animation-duration-slow) var(--animation-easing-snappy);
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--animation-duration-normal) var(--animation-easing-gentle);
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Component-specific animation utilities */
+.button-press {
+  transition: transform var(--animation-duration-fast) var(--animation-easing-snappy);
+}
+
+.button-press:active {
+  transform: scale(0.95);
+}
+
+.card-hover {
+  transition: transform var(--animation-duration-normal) var(--animation-easing-smooth),
+              box-shadow var(--animation-duration-normal) var(--animation-easing-smooth);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.nav-item {
+  transition: color var(--animation-duration-normal) var(--animation-easing-smooth),
+              transform var(--animation-duration-normal) var(--animation-easing-smooth);
+}
+
+.nav-item:hover {
+  transform: scale(1.05);
+}
+
+.status-change {
+  transition: opacity var(--animation-duration-fast) var(--animation-easing-ease-out),
+              background-color var(--animation-duration-fast) var(--animation-easing-ease-out);
+}
+
+.progress-fill {
+  transition: width var(--animation-duration-slow) var(--animation-easing-standard);
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* GPU-accelerated animation utilities */
+.gpu-accelerated {
+  will-change: transform, opacity;
+}
+
+.transform-only {
+  transition: transform var(--animation-duration-normal) var(--animation-easing-snappy);
+}
+
+.opacity-only {
+  transition: opacity var(--animation-duration-fast) var(--animation-easing-ease-out);
+}
+
+/* Performance optimizations */
+.animate-once {
+  animation: fadeIn var(--animation-duration-normal) var(--animation-easing-smooth) forwards;
+}
+
+.animate-once:hover {
+  animation-play-state: paused;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-scale-in {
+    opacity: 1;
+    transform: none;
+  }
+}
