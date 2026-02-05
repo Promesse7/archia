@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Card, CardContent, Button, StatusPill } from '../ui';
-import { cn } from '../../utils/cn';
+import { Card, CardContent, Button, StatusPill } from '../../ui';
+import { cn } from '../../../utils/cn';
 
-interface CameraCaptureProps {
-  onResult: (result: any) => void;
-  modelsReady: boolean;
-  className?: string;
-}
+/**
+ * @typedef {Object} CameraCaptureProps
+ * @property {(result: any) => void} onResult
+ * @property {boolean} modelsReady
+ * @property {string} [className]
+ */
 
 const CAMERA_STATES = {
   IDLE: 'idle',
@@ -15,16 +16,16 @@ const CAMERA_STATES = {
   PROCESSING: 'processing',
   SUCCESS: 'success',
   ERROR: 'error'
-} as const;
+};
 
-export const CameraCapture = React.forwardRef<HTMLDivElement, CameraCaptureProps>(
+export const CameraCapture = React.forwardRef(
   ({ onResult, modelsReady, className, ...props }, ref) => {
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const streamRef = useRef<MediaStream | null>(null);
+    const videoRef = useRef(null);
+    const canvasRef = useRef(null);
+    const streamRef = useRef(null);
     
     const [cameraState, setCameraState] = useState(CAMERA_STATES.IDLE);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState(null);
     const [isCameraReady, setIsCameraReady] = useState(false);
 
     // Initialize camera
@@ -198,5 +199,3 @@ export const CameraCapture = React.forwardRef<HTMLDivElement, CameraCaptureProps
 );
 
 CameraCapture.displayName = 'CameraCapture';
-
-export { CameraCapture, CAMERA_STATES };

@@ -57,7 +57,7 @@ export const OptimizedImage = React.forwardRef(
     }, [loading, isLoaded]);
 
     // Combine refs
-    const combinedRef = useCallback((node: HTMLImageElement) => {
+    const combinedRef = useCallback((node) => {
       imgRef.current = node;
       if (typeof ref === 'function') {
         ref(node);
@@ -130,5 +130,3 @@ export const OptimizedImage = React.forwardRef(
 );
 
 OptimizedImage.displayName = 'OptimizedImage';
-
-export { OptimizedImage };

@@ -44,8 +44,5 @@ export const LazyCameraCapture = React.forwardRef((props, ref) => {
       </Suspense>
     </div>
   );
-);
-
+});
 LazyCameraCapture.displayName = 'LazyCameraCapture';
-
-export { LazyCameraCapture };

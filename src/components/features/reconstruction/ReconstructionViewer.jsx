@@ -1,17 +1,18 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { cn } from '../../utils/cn';
+import { cn } from '../../../utils/cn';
 
-interface ReconstructionViewerProps {
-  mesh?: any;
-  classification?: any;
-  showPointCloud?: boolean;
-  showMesh?: boolean;
-  autoRotate?: boolean;
-  onReady?: () => void;
-  className?: string;
-}
+/**
+ * @typedef {Object} ReconstructionViewerProps
+ * @property {any} [mesh]
+ * @property {any} [classification]
+ * @property {boolean} [showPointCloud]
+ * @property {boolean} [showMesh]
+ * @property {boolean} [autoRotate]
+ * @property {() => void} [onReady]
+ * @property {string} [className]
+ */
 
-export const ReconstructionViewer = React.forwardRef<HTMLDivElement, ReconstructionViewerProps>(
+export const ReconstructionViewer = React.forwardRef(
   ({ 
     mesh, 
     classification, 
@@ -140,5 +141,3 @@ export const ReconstructionViewer = React.forwardRef<HTMLDivElement, Reconstruct
 );
 
 ReconstructionViewer.displayName = 'ReconstructionViewer';
-
-export { ReconstructionViewer };

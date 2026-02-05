@@ -56,8 +56,6 @@ export const LazyReconstructionViewer = React.forwardRef(
       </Suspense>
     </div>
   );
+}
 );
-
 LazyReconstructionViewer.displayName = 'LazyReconstructionViewer';
-
-export { LazyReconstructionViewer };

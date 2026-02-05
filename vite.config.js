@@ -2,37 +2,46 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
+// Load environment variables
+const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd());
+
 export default defineConfig({
   plugins: [react()],
   build: {
     // Code splitting
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks(id) {
           // Vendor chunks
-          vendor: ['react', 'react-dom'],
+          if (id.includes('react') || id.includes('react-dom')) {
+            return 'vendor';
+          }
           
           // Feature chunks
-          '3d-viewer': ['./src/components/features/reconstruction/ReconstructionViewer.jsx'],
-          camera: ['./src/components/features/camera/CameraCapture.jsx'],
-          puzzle: ['./src/components/features/puzzle/PuzzleBoard.jsx'],
-          gallery: ['./src/components/features/gallery/FragmentGrid.jsx'],
+          if (id.includes('ReconstructionViewer')) {
+            return '3d-viewer';
+          }
+          if (id.includes('CameraCapture')) {
+            return 'camera';
+          }
+          if (id.includes('PuzzleBoard')) {
+            return 'puzzle';
+          }
+          if (id.includes('FragmentGrid')) {
+            return 'gallery';
+          }
           
           // Page chunks
-          pages: [
-            './src/pages/HomePage.jsx',
-            './src/pages/capturePage.jsx', 
-            './src/pages/Reconstruct.jsx',
-            './src/pages/GalleryPage.jsx',
-            './src/pages/Puzzle.jsx',
-            './src/pages/AboutPage.jsx'
-          ]
+          if (id.includes('HomePage') || id.includes('capturePage') || id.includes('Reconstruct') || 
+              id.includes('GalleryPage') || id.includes('Puzzle') || id.includes('AboutPage')) {
+            return 'pages';
+          }
         }
       }
     },
     
     // Bundle optimization
-    minify: 'terser',
+    minify: false,
     sourcemap: false,
     target: 'esnext',
     
@@ -70,33 +79,33 @@ export default defineConfig({
   // Environment variables
   define: {
     // App info
-    __APP_VERSION__: JSON.stringify(loadEnv().npm_package_version || '1.0.0'),
-    __APP_TITLE__: JSON.stringify(loadEnv().VITE_APP_TITLE || 'ARCHIA'),
-    __APP_DESCRIPTION__: JSON.stringify(loadEnv().VITE_APP_DESCRIPTION || 'Archaeological Pottery Reconstruction AI'),
+    __APP_VERSION__: JSON.stringify(env.npm_package_version || '1.0.0'),
+    __APP_TITLE__: JSON.stringify(env.VITE_APP_TITLE || 'ARCHIA'),
+    __APP_DESCRIPTION__: JSON.stringify(env.VITE_APP_DESCRIPTION || 'Archaeological Pottery Reconstruction AI'),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
     
     // Environment
-    __NODE_ENV__: JSON.stringify(loadEnv().NODE_ENV || 'development'),
-    __DEV__: JSON.stringify(loadEnv().NODE_ENV === 'development'),
-    __PROD__: JSON.stringify(loadEnv().NODE_ENV === 'production'),
+    __NODE_ENV__: JSON.stringify(env.NODE_ENV || 'development'),
+    __DEV__: JSON.stringify(env.NODE_ENV === 'development'),
+    __PROD__: JSON.stringify(env.NODE_ENV === 'production'),
     
     // Feature flags
-    __ENABLE_ANALYTICS__: loadEnv().VITE_ENABLE_ANALYTICS === 'true',
-    __ENABLE_SENTRY__: loadEnv().VITE_ENABLE_SENTRY === 'true',
-    __ENABLE_3D_VIEWER__: loadEnv().VITE_ENABLE_3D_VIEWER !== 'false',
-    __ENABLE_CAMERA__: loadEnv().VITE_ENABLE_CAMERA !== 'false',
-    __ENABLE_PUZZLE__: loadEnv().VITE_ENABLE_PUZZLE !== 'false',
-    __ENABLE_GALLERY__: loadEnv().VITE_ENABLE_GALLERY !== 'false',
+    __ENABLE_ANALYTICS__: env.VITE_ENABLE_ANALYTICS === 'true',
+    __ENABLE_SENTRY__: env.VITE_ENABLE_SENTRY === 'true',
+    __ENABLE_3D_VIEWER__: env.VITE_ENABLE_3D_VIEWER !== 'false',
+    __ENABLE_CAMERA__: env.VITE_ENABLE_CAMERA !== 'false',
+    __ENABLE_PUZZLE__: env.VITE_ENABLE_PUZZLE !== 'false',
+    __ENABLE_GALLERY__: env.VITE_ENABLE_GALLERY !== 'false',
     
     // API endpoints
-    __API_BASE_URL__: JSON.stringify(loadEnv().VITE_API_BASE_URL || 'http://localhost:3001'),
-    __CDN_URL__: JSON.stringify(loadEnv().VITE_CDN_URL || 'http://localhost:3001'),
+    __API_BASE_URL__: JSON.stringify(env.VITE_API_BASE_URL || 'http://localhost:3001'),
+    __CDN_URL__: JSON.stringify(env.VITE_CDN_URL || 'http://localhost:3001'),
     
     // Sentry configuration
-    __SENTRY_DSN__: JSON.stringify(loadEnv().VITE_SENTRY_DSN || ''),
+    __SENTRY_DSN__: JSON.stringify(env.VITE_SENTRY_DSN || ''),
     
     // Debug settings
-    __DEBUG_MODE__: JSON.stringify(loadEnv().VITE_DEBUG_MODE || 'false'),
-    __LOG_LEVEL__: JSON.stringify(loadEnv().VITE_LOG_LEVEL || 'error')
+    __DEBUG_MODE__: JSON.stringify(env.VITE_DEBUG_MODE || 'false'),
+    __LOG_LEVEL__: JSON.stringify(env.VITE_LOG_LEVEL || 'error')
   }
 });
