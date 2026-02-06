@@ -23,6 +23,7 @@ export const CameraCapture = React.forwardRef(
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
+    const fileInputRef = useRef(null);
     
     const [cameraState, setCameraState] = useState(CAMERA_STATES.IDLE);
     const [error, setError] = useState(null);
@@ -83,17 +84,25 @@ export const CameraCapture = React.forwardRef(
           
           setCameraState(CAMERA_STATES.PROCESSING);
           
-          // Create image element for processing
-          const imageElement = new Image();
-          imageElement.onload = () => {
-            onResult({
-              imageElement,
-              imageBlob: blob,
-              timestamp: Date.now()
-            });
-            setCameraState(CAMERA_STATES.SUCCESS);
+          // Convert blob to data URL for compatibility
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const dataUrl = reader.result;
+            
+            // Create image element for processing
+            const imageElement = new Image();
+            imageElement.onload = () => {
+              onResult({
+                image: dataUrl,
+                imageElement,
+                imageBlob: blob,
+                timestamp: Date.now()
+              });
+              setCameraState(CAMERA_STATES.SUCCESS);
+            };
+            imageElement.src = dataUrl;
           };
-          imageElement.src = URL.createObjectURL(blob);
+          reader.readAsDataURL(blob);
         }, 'image/jpeg', 0.95);
         
       } catch (err) {
@@ -102,6 +111,42 @@ export const CameraCapture = React.forwardRef(
         setCameraState(CAMERA_STATES.ERROR);
       }
     }, [isCameraReady, onResult]);
+
+    // Handle file upload
+    const handleFileUpload = useCallback((event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      setCameraState(CAMERA_STATES.PROCESSING);
+      setError(null);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        
+        // Create image element for processing
+        const imageElement = new Image();
+        imageElement.onload = () => {
+          onResult({
+            image: dataUrl,
+            imageElement,
+            imageFile: file,
+            timestamp: Date.now()
+          });
+          setCameraState(CAMERA_STATES.SUCCESS);
+        };
+        imageElement.onerror = () => {
+          setError('Failed to load image');
+          setCameraState(CAMERA_STATES.ERROR);
+        };
+        imageElement.src = dataUrl;
+      };
+      reader.onerror = () => {
+        setError('Failed to read file');
+        setCameraState(CAMERA_STATES.ERROR);
+      };
+      reader.readAsDataURL(file);
+    }, [onResult]);
 
     // Cleanup camera on unmount
     useEffect(() => {
@@ -182,15 +227,33 @@ export const CameraCapture = React.forwardRef(
                 {cameraState === CAMERA_STATES.PROCESSING ? 'Processing...' : 'Capture Fragment'}
               </Button>
               
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={cameraState === CAMERA_STATES.PROCESSING}
+                variant="secondary"
+                className="flex-1"
+              >
+                Upload
+              </Button>
+              
               {cameraState === CAMERA_STATES.SUCCESS && (
                 <Button
                   onClick={() => setCameraState(CAMERA_STATES.IDLE)}
-                  variant="secondary"
+                  variant="outline"
                 >
                   Capture Another
                 </Button>
               )}
             </div>
+            
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
           </CardContent>
         </Card>
       </div>

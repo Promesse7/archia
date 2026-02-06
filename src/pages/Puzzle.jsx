@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent, Button, Badge, SectionHeader 
 
 // Icon components
 const PuzzleIcon = () => (
-  <svg className="w-12 h-12 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-12 h-12 text-charcoal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
   </svg>
 );
@@ -152,7 +152,7 @@ export default function PuzzlePage({ onNavigate }) {
     }
     
     setInsights(insights);
-  }, [mode, timer]);
+  }, [gameMode, timer]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -181,7 +181,7 @@ export default function PuzzlePage({ onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-800 px-6 py-8">
+    <div className="min-h-screen bg-charcoal-800 px-6 py-8">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Section Header */}
         <SectionHeader
@@ -192,37 +192,37 @@ export default function PuzzlePage({ onNavigate }) {
         {/* Menu State */}
         {gameState === 'menu' && (
           <div className="grid md:grid-cols-3 gap-6">
-            {puzzleModes.map((mode) => (
+            {puzzleModes.map((puzzleMode) => (
               <Card
-                key={mode.id}
-                className="cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 border-zinc-700/50 hover:border-amber-500/30"
-                onClick={() => startPuzzle(mode.id)}
+                key={puzzleMode.id}
+                className="cursor-pointer transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 border-charcoal-700/50 hover:border-amber-500/30"
+                onClick={() => startPuzzle(puzzleMode.id)}
               >
                 <CardContent className="p-6 text-center space-y-4">
-                  <div className="text-4xl">{mode.icon}</div>
+                  <div className="text-4xl">{puzzleMode.icon}</div>
                   
                   <div className="space-y-2">
                     <h3 className="text-xl font-semibold text-white">
-                      {mode.title}
+                      {puzzleMode.title}
                     </h3>
                     
-                    <Badge variant={getDifficultyColor(mode.difficulty)} size="sm">
-                      {mode.difficulty}
+                    <Badge variant="ghost" size="sm" color={getDifficultyColor(puzzleMode.difficulty)}>
+                      {puzzleMode.difficulty}
                     </Badge>
                   </div>
                   
-                  <p className="text-zinc-400 text-sm leading-relaxed">
-                    {mode.description}
+                  <p className="text-charcoal-400 text-sm leading-relaxed">
+                    {puzzleMode.description}
                   </p>
                   
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-zinc-500">Pieces:</span>
-                      <span className="text-white font-medium">{mode.pieces}</span>
+                      <span className="text-charcoal-500">Pieces:</span>
+                      <span className="text-white font-medium">{puzzleMode.pieces}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-zinc-500">Est. Time:</span>
-                      <span className="text-white font-medium">{mode.timeEstimate}</span>
+                      <span className="text-charcoal-500">Est. Time:</span>
+                      <span className="text-white font-medium">{puzzleMode.timeEstimate}</span>
                     </div>
                   </div>
                   
@@ -230,6 +230,7 @@ export default function PuzzlePage({ onNavigate }) {
                     variant="primary"
                     size="lg"
                     className="w-full"
+                    onClick={() => startPuzzle(puzzleMode.id)}
                   >
                     Start Puzzle
                   </Button>
@@ -243,7 +244,7 @@ export default function PuzzlePage({ onNavigate }) {
         {gameState === 'playing' && puzzleData && (
           <div className="space-y-6">
             {/* Game Header */}
-            <Card className="bg-zinc-700/50 border-zinc-600/50">
+            <Card className="bg-charcoal-700/50 border-charcoal-600/50">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6">
@@ -251,13 +252,13 @@ export default function PuzzlePage({ onNavigate }) {
                       <span className="font-medium">
                         {puzzleModes.find(m => m.id === gameMode)?.title}
                       </span>
-                      <div className="text-sm text-zinc-400 mt-1">
+                      <div className="text-sm text-charcoal-400 mt-1">
                         Progress: {placedPieces} / {totalPieces} pieces
                       </div>
                     </div>
                     
                     {/* Progress Bar */}
-                    <div className="w-48 h-2 bg-zinc-600 rounded-full overflow-hidden">
+                    <div className="w-48 h-2 bg-charcoal-600 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
                         style={{ width: `${(placedPieces / totalPieces) * 100}%` }}
@@ -297,7 +298,7 @@ export default function PuzzlePage({ onNavigate }) {
                       </Button>
                       
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={resetPuzzle}
                       >
@@ -310,7 +311,7 @@ export default function PuzzlePage({ onNavigate }) {
             </Card>
 
             {/* Puzzle Board */}
-            <Card className="bg-zinc-700/30 border-zinc-600/30">
+            <Card className="bg-charcoal-700/30 border-charcoal-600/30">
               <CardContent className="p-8">
                 <div className="aspect-square max-w-2xl mx-auto">
                   {/* Simplified puzzle grid for demo */}
@@ -333,7 +334,7 @@ export default function PuzzlePage({ onNavigate }) {
                             transition-all duration-300 cursor-pointer
                             ${isPlaced 
                               ? 'bg-amber-500/20 border-amber-500 text-amber-400' 
-                              : 'bg-zinc-800/50 border-zinc-600 text-zinc-400 hover:border-amber-500/50 hover:bg-zinc-700/50'
+                              : 'bg-charcoal-800/50 border-charcoal-600 text-charcoal-400 hover:border-amber-500/50 hover:bg-charcoal-700/50'
                             }
                           `}
                         >
@@ -349,7 +350,7 @@ export default function PuzzlePage({ onNavigate }) {
                   <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
                     <div className="flex items-start gap-3">
                       <LightbulbIcon className="text-amber-500 flex-shrink-0 mt-0.5" />
-                      <div className="text-zinc-300 text-sm">
+                      <div className="text-charcoal-300 text-sm">
                         <p className="font-medium mb-1">Archaeological Insight:</p>
                         <p>
                           Look for patterns in the fragment edges. Pottery fragments often have distinctive 
@@ -366,7 +367,7 @@ export default function PuzzlePage({ onNavigate }) {
 
         {/* Completed State */}
         {gameState === 'completed' && (
-          <Card className="bg-zinc-700/50 border-zinc-600/50">
+          <Card className="bg-charcoal-700/50 border-charcoal-600/50">
             <CardContent className="p-8 text-center space-y-6">
               <div className="flex justify-center">
                 <TrophyIcon className="w-16 h-16 text-amber-500" />
@@ -376,7 +377,7 @@ export default function PuzzlePage({ onNavigate }) {
                 <h3 className="text-2xl font-bold text-white">
                   Puzzle Complete!
                 </h3>
-                <p className="text-zinc-400">
+                <p className="text-charcoal-400">
                   You successfully reconstructed the pottery fragment
                 </p>
               </div>
@@ -388,7 +389,7 @@ export default function PuzzlePage({ onNavigate }) {
                     <div className="text-2xl font-bold text-amber-400">
                       {formatTime(timer)}
                     </div>
-                    <div className="text-sm text-zinc-500">Final Time</div>
+                    <div className="text-sm text-charcoal-500">Final Time</div>
                   </div>
                 )}
                 
@@ -396,7 +397,7 @@ export default function PuzzlePage({ onNavigate }) {
                   <div className="text-2xl font-bold text-amber-400">
                     {totalPieces}
                   </div>
-                  <div className="text-sm text-zinc-500">Pieces Placed</div>
+                  <div className="text-sm text-charcoal-500">Pieces Placed</div>
                 </div>
               </div>
               
@@ -406,7 +407,7 @@ export default function PuzzlePage({ onNavigate }) {
                   <h4 className="text-lg font-semibold text-white">Archaeological Insights</h4>
                   <div className="space-y-2">
                     {insights.map((insight, index) => (
-                      <div key={index} className="p-3 bg-zinc-800/50 rounded-lg text-zinc-300 text-sm">
+                      <div key={index} className="p-3 bg-charcoal-800/50 rounded-lg text-charcoal-300 text-sm">
                         {insight}
                       </div>
                     ))}
@@ -425,7 +426,7 @@ export default function PuzzlePage({ onNavigate }) {
                 </Button>
                 
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="lg"
                   onClick={resetPuzzle}
                 >

@@ -25,7 +25,7 @@ const ResetIcon = () => (
 );
 
 const CameraIcon = () => (
-  <svg className="w-12 h-12 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-12 h-12 text-charcoal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
@@ -128,12 +128,12 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
     <div className="min-h-screen bg-black">
       <div className="relative">
         {/* Section Header */}
-        <div className="absolute top-0 left-0 right-0 z-10 bg-black/80 backdrop-blur-sm border-b border-zinc-900/50">
+        <div className="absolute top-0 left-0 right-0 z-10 bg-black/80 backdrop-blur-sm border-b border-charcoal-900/50">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <SectionHeader
               title="3D Reconstruction"
               subtitle={hasFragments 
-                ? `Analyzing ${fragments.length} fragment${fragments.length !== 1 ? 's' : ''}` 
+                ? `Analycharcoalg ${fragments.length} fragment${fragments.length !== 1 ? 's' : ''}` 
                 : "Archaeological reconstruction workspace"
               }
             />
@@ -142,7 +142,7 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
 
         {/* Main Viewer Container */}
         <div className="pt-24">
-          <Card className="bg-black border-zinc-900/50 rounded-none">
+          <Card className="bg-black border-charcoal-900/50 rounded-none">
             <CardContent className="p-0">
               <div 
                 ref={viewerRef}
@@ -183,7 +183,7 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
 
                     {/* Floating Controls */}
                     <div className="absolute top-4 right-4 flex flex-col gap-2">
-                      <div className="bg-black/60 backdrop-blur-md border border-zinc-800/50 rounded-lg p-2">
+                      <div className="bg-black/60 backdrop-blur-md border border-charcoal-800/50 rounded-lg p-2">
                         <div className="flex flex-col gap-1">
                           <IconButton
                             icon={<RebuildIcon />}
@@ -215,11 +215,11 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
                         <CameraIcon />
                       </div>
                       
-                      <h3 className="text-2xl font-semibold text-zinc-300">
+                      <h3 className="text-2xl font-semibold text-charcoal-300">
                         No fragments captured yet
                       </h3>
                       
-                      <p className="text-zinc-500 leading-relaxed">
+                      <p className="text-charcoal-500 leading-relaxed">
                         Capture pottery fragments to begin 3D reconstruction analysis
                       </p>
                       

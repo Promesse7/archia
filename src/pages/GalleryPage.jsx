@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent, Button, Badge, SectionHeader 
 
 // Icon components
 const CameraIcon = () => (
-  <svg className="w-12 h-12 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-12 h-12 text-charcoal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
@@ -205,7 +205,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-900 px-6 py-8">
+    <div className="min-h-screen bg-charcoal-900 px-6 py-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Section Header with Enhanced Controls */}
         <SectionHeader
@@ -214,11 +214,11 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
           action={
             <div className="flex items-center gap-3">
               {/* View Mode Toggle */}
-              <div className="flex bg-zinc-800 rounded-lg p-1">
+              <div className="flex bg-charcoal-800 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
                   className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-zinc-400 hover:text-white'
+                    viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-charcoal-400 hover:text-white'
                   }`}
                   aria-label="Grid view"
                   title="Grid view"
@@ -228,7 +228,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                 <button
                   onClick={() => setViewMode('list')}
                   className={`p-2 rounded transition-colors ${
-                    viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-zinc-400 hover:text-white'
+                    viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-charcoal-400 hover:text-white'
                   }`}
                   aria-label="List view"
                   title="List view"
@@ -265,7 +265,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
 
         {/* Empty State */}
         {!hasFragments && (
-          <Card className="bg-zinc-800/50 border-zinc-700/50">
+          <Card className="bg-charcoal-800/50 border-charcoal-700/50">
             <CardContent className="p-16 text-center">
               <div className="flex justify-center mb-6">
                 <CameraIcon />
@@ -273,7 +273,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
               <h3 className="text-2xl font-bold text-white mb-4">
                 No fragments yet
               </h3>
-              <p className="text-zinc-400 mb-8 max-w-md mx-auto">
+              <p className="text-charcoal-400 mb-8 max-w-md mx-auto">
                 Capture pottery fragments to build your gallery and begin reconstruction analysis
               </p>
               <Button
@@ -306,7 +306,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                     cursor-pointer transition-all duration-300 transform outline-none
                     ${isSelected 
                       ? 'ring-2 ring-amber-500/50 border-amber-500/50 scale-105' 
-                      : 'border-zinc-700/50 hover:border-amber-500/30 hover:scale-[1.02] hover:-translate-y-1'
+                      : 'border-charcoal-700/50 hover:border-amber-500/30 hover:scale-[1.02] hover:-translate-y-1'
                     }
                     ${isHovered && !isSelected ? 'scale-[1.03] -translate-y-2' : ''}
                     ${isFocused ? 'ring-2 ring-amber-400/50' : ''}
@@ -332,7 +332,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                       // Grid View Layout
                       <>
                         {/* Fragment Image */}
-                        <div className="relative aspect-square bg-zinc-950 overflow-hidden">
+                        <div className="relative aspect-square bg-charcoal-950 overflow-hidden">
                           <img
                             src={fragment.image}
                             alt={`Fragment ${index + 1} - ${fragment.classification?.fragmentType || 'Unknown type'}`}
@@ -367,7 +367,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                               {fragment.classification?.fragmentType || "Unknown"}
                             </Badge>
                             
-                            <div className="text-xs text-zinc-500">
+                            <div className="text-xs text-charcoal-500">
                               {((fragment.classification?.confidence || 0) * 100).toFixed(1)}%
                             </div>
                           </div>
@@ -375,14 +375,14 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                           {/* Additional Info */}
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-zinc-500">Points:</span>
+                              <span className="text-charcoal-500">Points:</span>
                               <span className="text-white font-medium">
                                 {fragment.pointCloud?.length || 0}
                               </span>
                             </div>
                             
                             <div className="flex justify-between">
-                              <span className="text-zinc-500">Captured:</span>
+                              <span className="text-charcoal-500">Captured:</span>
                               <span className="text-white font-medium text-xs">
                                 {formatDate(fragment.timestamp)}
                               </span>
@@ -390,7 +390,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                             
                             {fragment.processingTime && (
                               <div className="flex justify-between">
-                                <span className="text-zinc-500">Processing:</span>
+                                <span className="text-charcoal-500">Processing:</span>
                                 <span className="text-white font-medium text-xs">
                                   {(fragment.processingTime / 1000).toFixed(1)}s
                                 </span>
@@ -399,7 +399,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                           </div>
                           
                           {/* Quick Actions */}
-                          <div className="flex gap-2 pt-2 border-t border-zinc-800">
+                          <div className="flex gap-2 pt-2 border-t border-charcoal-800">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -432,7 +432,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                       // List View Layout
                       <div className="flex items-center p-4 gap-4">
                         {/* Thumbnail */}
-                        <div className="relative w-20 h-20 bg-zinc-950 rounded-lg overflow-hidden flex-shrink-0">
+                        <div className="relative w-20 h-20 bg-charcoal-950 rounded-lg overflow-hidden flex-shrink-0">
                           <img
                             src={fragment.image}
                             alt={`Fragment ${index + 1} thumbnail`}
@@ -454,27 +454,27 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                             >
                               {fragment.classification?.fragmentType || "Unknown"}
                             </Badge>
-                            <div className="text-xs text-zinc-500">
+                            <div className="text-xs text-charcoal-500">
                               {((fragment.classification?.confidence || 0) * 100).toFixed(1)}%
                             </div>
                           </div>
                           
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                             <div>
-                              <span className="text-zinc-500">Points:</span>
+                              <span className="text-charcoal-500">Points:</span>
                               <span className="text-white font-medium ml-1">
                                 {fragment.pointCloud?.length || 0}
                               </span>
                             </div>
                             <div>
-                              <span className="text-zinc-500">Captured:</span>
+                              <span className="text-charcoal-500">Captured:</span>
                               <span className="text-white font-medium ml-1 text-xs">
                                 {formatDate(fragment.timestamp)}
                               </span>
                             </div>
                             {fragment.processingTime && (
                               <div>
-                                <span className="text-zinc-500">Processing:</span>
+                                <span className="text-charcoal-500">Processing:</span>
                                 <span className="text-white font-medium ml-1">
                                   {(fragment.processingTime / 1000).toFixed(1)}s
                                 </span>
@@ -519,18 +519,18 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
 
         {/* Enhanced Selection Summary */}
         {hasFragments && selectedFragments.size > 0 && (
-          <Card className="bg-zinc-800/50 border-zinc-700/50">
+          <Card className="bg-charcoal-800/50 border-charcoal-700/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="text-white">
                   <span className="font-medium">
                     {selectedFragments.size} fragment{selectedFragments.size !== 1 ? 's' : ''} selected
                   </span>
-                  <span className="text-zinc-400 ml-2">
+                  <span className="text-charcoal-400 ml-2">
                     for reconstruction
                   </span>
                   {/* Additional stats */}
-                  <div className="text-xs text-zinc-500 mt-1">
+                  <div className="text-xs text-charcoal-500 mt-1">
                     {(() => {
                       const stats = getSelectionStats();
                       return `Avg confidence: ${stats.avgConfidence.toFixed(1)}% | Total points: ${stats.totalPoints.toLocaleString()}`;
@@ -573,7 +573,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
           {hasFragments && (
             <Button
               onClick={() => onNavigate('capture')}
-              variant="outline"
+              variant="secondary"
               aria-label="Go to capture page to add more fragments"
             >
               Capture More

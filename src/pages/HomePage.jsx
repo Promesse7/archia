@@ -3,14 +3,14 @@ import { Card, CardContent, Button } from '../components/ui';
 
 export default function HomePage({ onNavigate, fragmentCount }) {
   return (
-    <div className="min-h-screen bg-zinc-950 p-8">
+    <div className="min-h-screen bg-charcoal-950 p-8">
       <div className="max-w-6xl mx-auto space-y-12">
         {/* Welcome section */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-white">
             Welcome to ARCHIA
           </h1>
-          <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
+          <p className="text-charcoal-400 text-lg max-w-2xl mx-auto">
             Reconstruct ancient pottery fragments with AI-powered analysis and 3D visualization
           </p>
           
@@ -54,7 +54,7 @@ export default function HomePage({ onNavigate, fragmentCount }) {
                 <h3 className="text-2xl font-bold text-white mb-2">
                   View Reconstruction
                 </h3>
-                <p className="text-zinc-400 mb-6">
+                <p className="text-charcoal-400 mb-6">
                   Assemble fragments into complete 3D pottery models
                 </p>
               </div>
@@ -62,7 +62,7 @@ export default function HomePage({ onNavigate, fragmentCount }) {
                 onClick={() => onNavigate('reconstruction')}
                 className="w-full"
                 size="lg"
-                variant={fragmentCount === 0 ? "outline" : "default"}
+                variant={fragmentCount === 0 ? "ghost" : "primary"}
                 disabled={fragmentCount === 0}
               >
                 {fragmentCount === 0 ? 'Need Fragments' : 'View 3D Model'}
@@ -77,7 +77,7 @@ export default function HomePage({ onNavigate, fragmentCount }) {
                 <h3 className="text-2xl font-bold text-white mb-2">
                   Puzzle Lab
                 </h3>
-                <p className="text-zinc-400 mb-6">
+                <p className="text-charcoal-400 mb-6">
                   Train your eye with archaeological fragment puzzles
                 </p>
               </div>
@@ -85,7 +85,7 @@ export default function HomePage({ onNavigate, fragmentCount }) {
                 onClick={() => onNavigate('puzzle')}
                 className="w-full"
                 size="lg"
-                variant="outline"
+                variant="secondary"
               >
                 Enter Lab
               </Button>

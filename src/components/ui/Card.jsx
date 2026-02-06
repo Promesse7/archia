@@ -16,11 +16,11 @@ const Card = React.forwardRef(({ className, padding = 'md', children, ...props }
     <div
       ref={ref}
       className={`
-        rounded-xl border border-zinc-800/50 bg-zinc-900/50 backdrop-blur-sm text-white
+        rounded-xl border border-charcoal-700/50 bg-charcoal-900/50 backdrop-blur-sm text-white
         shadow-lg shadow-black/20
         transition-all duration-[200ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
-        hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-900/20
-        focus:ring-2 focus:ring-amber-500/50 focus:outline-none
+        hover:-translate-y-1 hover:shadow-xl hover:shadow-charcoal-900/20
+        focus:ring-2 focus:ring-ochre-500/50 focus:outline-none
         ${paddingClass} ${className}
       `}
       style={{
@@ -37,7 +37,7 @@ const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={`
-      flex flex-col space-y-2 pb-4 border-b border-zinc-800/50
+      flex flex-col space-y-2 pb-4 border-b border-charcoal-700/50
       ${className}
     `}
     {...props}
@@ -59,7 +59,7 @@ const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
   <p
     ref={ref}
     className={`
-      text-sm text-zinc-400 leading-relaxed
+      text-sm text-charcoal-400 leading-relaxed
       ${className}
     `}
     {...props}
@@ -81,7 +81,7 @@ const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={`
-      flex items-center justify-between pt-4 mt-4 border-t border-zinc-800/50
+      flex items-center justify-between pt-4 mt-4 border-t border-charcoal-700/50
       ${className}
     `}
     {...props}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent, Button, StatusPill, SectionHeader } from '../components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, StatusPill, SectionHeader } from '../components/ui';
 import { LazyCameraCapture } from '../components/ui/LazyCameraCapture';
 import { useMemoryManager } from '../utils/memoryManager';
 import { getEnhancedPipeline } from '../pipeline/enhancedPipeline';
@@ -105,7 +105,7 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 px-6 py-8">
+    <div className="min-h-screen bg-charcoal-950 px-6 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Section Header */}
         <SectionHeader
@@ -114,11 +114,11 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
         />
 
         {/* Camera Card */}
-        <Card className="bg-zinc-900/80 border-zinc-800/50">
+        <Card className="bg-charcoal-900/80 border-charcoal-800/50">
           <CardContent className="p-8">
             <div className="space-y-6">
               {/* Camera Feed */}
-              <div className="relative aspect-video bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden">
+              <div className="relative aspect-video bg-charcoal-950 rounded-xl border border-charcoal-800 overflow-hidden">
                 {!capturedFragment ? (
                   <LazyCameraCapture 
                     onResult={handleCaptureResult} 
@@ -147,23 +147,7 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {!capturedFragment ? (
                   <>
-                    <Button 
-                      variant="primary" 
-                      size="lg"
-                      disabled={cameraStatus === 'processing' || cameraStatus === 'loading'}
-                      className="px-8"
-                    >
-                      Capture
-                    </Button>
-                    
-                    <Button 
-                      variant="secondary" 
-                      size="lg"
-                      disabled={cameraStatus === 'processing'}
-                      className="px-8"
-                    >
-                      Upload
-                    </Button>
+                    {/* The LazyCameraCapture component handles its own controls */}
                   </>
                 ) : (
                   <>
@@ -194,13 +178,13 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
                   <h3 className="mt-0 text-amber-500">
                     {processingProgress.stage}
                   </h3>
-                  <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden mb-3">
+                  <div className="w-full h-2 bg-charcoal-700 rounded-full overflow-hidden mb-3">
                     <div
                       className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
                       style={{ width: `${processingProgress.percent}%` }}
                     />
                   </div>
-                  <div className="text-zinc-400">
+                  <div className="text-charcoal-400">
                     {processingProgress.percent.toFixed(0)}%
                   </div>
                 </div>
@@ -211,35 +195,35 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
 
         {/* Fragment Info (if captured) */}
         {capturedFragment && (
-          <Card className="bg-zinc-900/80 border-zinc-800/50">
+          <Card className="bg-charcoal-900/80 border-charcoal-800/50">
             <CardHeader>
               <CardTitle className="text-white">Fragment Analysis</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="text-zinc-500">Type:</span>
+                  <span className="text-charcoal-500">Type:</span>
                   <div className="font-medium text-white mt-1">
                     {capturedFragment.classification?.fragmentType || "unknown"}
                   </div>
                 </div>
                 
                 <div>
-                  <span className="text-zinc-500">Confidence:</span>
+                  <span className="text-charcoal-500">Confidence:</span>
                   <div className="font-medium text-white mt-1">
                     {((capturedFragment.classification?.confidence || 0) * 100).toFixed(1)}%
                   </div>
                 </div>
                 
                 <div>
-                  <span className="text-zinc-500">Points:</span>
+                  <span className="text-charcoal-500">Points:</span>
                   <div className="font-medium text-white mt-1">
                     {capturedFragment.pointCloud?.length || 0}
                   </div>
                 </div>
                 
                 <div>
-                  <span className="text-zinc-500">Processing:</span>
+                  <span className="text-charcoal-500">Processing:</span>
                   <div className="font-medium text-white mt-1">
                     {(capturedFragment.processingTime / 1000).toFixed(1)}s
                   </div>
