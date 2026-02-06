@@ -65,6 +65,21 @@ export default function App() {
   const [loadingStage, setLoadingStage] = useState("Initializing...");
   const [loadingError, setLoadingError] = useState(null);
 
+  // Navigation function
+  const navigate = useCallback((page) => {
+    setCurrentPage(page);
+  }, []);
+
+  // Handle fragment addition
+  const handleFragmentAdded = useCallback((fragment) => {
+    setFragments(prev => [...prev, fragment]);
+  }, []);
+
+  // Handle splash completion
+  const handleSplashComplete = useCallback(() => {
+    navigate('home');
+  }, [navigate]);
+
   // Load models on mount
   useEffect(() => {
     if (modelsStarted) return;
@@ -88,7 +103,7 @@ export default function App() {
         const success = await preloadModels((progressData) => {
           const mappedProgress = 25 + (progressData.percent * 0.75);
           setLoadingProgress(mappedProgress);
-          setLoadingStage(progressData.stage);
+          setLoadingStage(progressData.stage || "Loading AI models...");
         });
 
         if (success) {
@@ -120,21 +135,6 @@ export default function App() {
       />
     );
   }
-
-  // Navigation function
-  const navigate = useCallback((page) => {
-    setCurrentPage(page);
-  }, []);
-
-  // Handle fragment addition
-  const handleFragmentAdded = useCallback((fragment) => {
-    setFragments(prev => [...prev, fragment]);
-  }, []);
-
-  // Handle splash completion
-  const handleSplashComplete = useCallback(() => {
-    navigate('home');
-  }, [navigate]);
 
   // Render screen with transitions
   const renderScreen = (screenId, component) => (
