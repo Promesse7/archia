@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { cn } from '../../utils/cn';
+import { cn } from '../../utils/cn.js';
 
 // Lazy load the heavy 3D viewer
 const HeavyReconstructionViewer = lazy(() => 

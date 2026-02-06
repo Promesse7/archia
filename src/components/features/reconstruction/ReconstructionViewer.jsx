@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { cn } from '../../../utils/cn';
+import { cn } from '../../../utils/cn.js';
 
 /**
  * @typedef {Object} ReconstructionViewerProps

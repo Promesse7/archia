@@ -15,24 +15,46 @@ const GalleryPage = React.lazy(() => import('./pages/GalleryPage'));
 const PuzzlePage = React.lazy(() => import('./pages/Puzzle'));
 const AboutPage = React.lazy(() => import('./pages/AboutPage'));
 
-// Error boundary component for graceful error handling
-const ErrorBoundary = ({ children, error }) => (
-  <div className="min-h-screen bg-zinc-900 text-white flex items-center justify-center p-6">
-    <div className="text-center space-y-4">
-      <div className="text-6xl text-red-400 mb-4">⚠️</div>
-      <h2 className="text-2xl font-bold mb-2">Something went wrong</h2>
-      <p className="text-zinc-400 mb-4">
-        {error?.message || 'An unexpected error occurred'}
-      </p>
-      <button
-        onClick={() => window.location.reload()}
-        className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
-      >
-        Reload Page
-      </button>
-    </div>
-  </div>
-);
+// Proper Error boundary component for graceful error handling
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+    this.setState({ errorInfo });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-zinc-900 text-white flex items-center justify-center p-6">
+          <div className="text-center space-y-4">
+            <div className="text-6xl text-red-400 mb-4">⚠️</div>
+            <h2 className="text-2xl font-bold mb-2">Something went wrong</h2>
+            <p className="text-zinc-400 mb-4">
+              {this.state.error?.message || 'An unexpected error occurred'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // Lazy loading wrapper with error boundary
 const LazyPageWrapper = ({ children, fallback = null }) => (

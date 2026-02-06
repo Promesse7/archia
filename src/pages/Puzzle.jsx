@@ -130,12 +130,12 @@ export default function PuzzlePage({ onNavigate }) {
       if (placedCount === totalPieces) {
         setGameState('completed');
         setIsTimerRunning(false);
-        generateInsights(mode);
+        generateInsights(gameMode);
       }
       
       return { pieces: newPieces };
     });
-  }, [puzzleData, totalPieces]);
+  }, [puzzleData, totalPieces, gameMode]);
 
   const generateInsights = useCallback((mode) => {
     const insights = [];

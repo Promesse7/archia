@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, Button, SectionHeader } from '../components/ui';
 import { LazyReconstructionViewer } from '../components/ui/LazyReconstructionViewer';
-import { useMemoryManager } from '../utils/memoryManager';
+import { useMemoryManager } from '../utils/memoryManager.js';
 import { getPotteryReconstructor } from '../reconstruction/potteryRebuilder';
 import { getFragmentClassifier } from '../ai/classifier';
 
