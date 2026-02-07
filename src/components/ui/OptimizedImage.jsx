@@ -130,3 +130,6 @@ export const OptimizedImage = React.forwardRef(
 );
 
 OptimizedImage.displayName = 'OptimizedImage';
+
+// Default export for backward compatibility
+export default OptimizedImage;

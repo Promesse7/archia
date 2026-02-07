@@ -164,22 +164,7 @@ export const CameraCapture = React.forwardRef(
       }
     }, [modelsReady, cameraState, isCameraReady, initializeCamera]);
 
-    const getStatusMessage = () => {
-      switch (cameraState) {
-        case CAMERA_STATES.INITIALIZING:
-          return 'Initializing camera...';
-        case CAMERA_STATES.CAPTURING:
-          return 'Capturing...';
-        case CAMERA_STATES.PROCESSING:
-          return 'Processing fragment...';
-        case CAMERA_STATES.SUCCESS:
-          return 'Fragment captured!';
-        case CAMERA_STATES.ERROR:
-          return error || 'Camera error';
-        default:
-          return 'Ready to capture';
-      }
-    };
+
 
     return (
       <div ref={ref} className={cn('space-y-4', className)} {...props}>
@@ -207,14 +192,7 @@ export const CameraCapture = React.forwardRef(
             
             {/* Hidden canvas for capture */}
             <canvas ref={canvasRef} className="hidden" />
-            
-            {/* Status */}
-            <StatusPill
-              status={cameraState === CAMERA_STATES.ERROR ? 'error' : 
-                     cameraState === CAMERA_STATES.SUCCESS ? 'success' : 
-                     cameraState === CAMERA_STATES.PROCESSING ? 'loading' : 'idle'}
-              message={getStatusMessage()}
-            />
+
             
             {/* Controls */}
             <div className="flex gap-3">
@@ -262,3 +240,6 @@ export const CameraCapture = React.forwardRef(
 );
 
 CameraCapture.displayName = 'CameraCapture';
+
+// Export as default
+export default CameraCapture;

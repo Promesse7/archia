@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Button, StatusPill, SectionHeader } from '../components/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { StatusPill } from '../components/ui/StatusPill';
+import { SectionHeader } from '../components/ui/SectionHeader';
 import { LazyCameraCapture } from '../components/ui/LazyCameraCapture';
 import { useMemoryManager } from '../utils/memoryManager';
 import { getEnhancedPipeline } from '../pipeline/enhancedPipeline';
+import { useNavigation } from '../contexts/NavigationContext';
 
-export default function CapturePage({ onNavigate, onFragmentAdded }) {
+export default function CapturePage() {
+  const { navigate, addFragment } = useNavigation(); // Use addFragment from NavigationContext
   const [capturedFragment, setCapturedFragment] = useState(null);
   const [processingProgress, setProcessingProgress] = useState(null);
   const [cameraStatus, setCameraStatus] = useState('idle');
@@ -76,11 +81,11 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
 
   const handleAddToSession = () => {
     if (capturedFragment) {
-      onFragmentAdded(capturedFragment);
+      addFragment(capturedFragment); // Use central fragment management
       setCapturedFragment(null);
       setCameraStatus('ready');
-      // Navigate back to home to show updated count
-      onNavigate('home');
+      // Navigate to reconstruct screen
+      navigate('reconstruct');
     }
   };
 
@@ -105,8 +110,8 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
   };
 
   return (
-    <div className="min-h-screen bg-charcoal-950 px-6 py-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-charcoal-950 px-4 py-6 sm:px-8 sm:py-10">
+      <div className="max-w-5xl mx-auto space-y-8">
         {/* Section Header */}
         <SectionHeader
           title="Capture Fragment"
@@ -114,11 +119,11 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
         />
 
         {/* Camera Card */}
-        <Card className="bg-charcoal-900/80 border-charcoal-800/50">
-          <CardContent className="p-8">
-            <div className="space-y-6">
+        <Card className="bg-charcoal-900/80 border-charcoal-800/50 shadow-2xl">
+          <CardContent className="p-6 sm:p-10">
+            <div className="space-y-8">
               {/* Camera Feed */}
-              <div className="relative aspect-video bg-charcoal-950 rounded-xl border border-charcoal-800 overflow-hidden">
+              <div className="relative aspect-[4/3] sm:aspect-video bg-charcoal-950 rounded-xl border-2 border-charcoal-700/50 overflow-hidden shadow-inner">
                 {!capturedFragment ? (
                   <LazyCameraCapture 
                     onResult={handleCaptureResult} 
@@ -136,15 +141,16 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
               </div>
 
               {/* Status Indicator */}
-              <div className="flex justify-center">
+              <div className="flex justify-center pt-2">
                 <StatusPill 
                   status={cameraStatus}
                   message={getStatusMessage()}
+                  className="text-base px-4 py-2"
                 />
               </div>
 
               {/* Controls Panel */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-5 justify-center pt-4">
                 {!capturedFragment ? (
                   <>
                     {/* The LazyCameraCapture component handles its own controls */}
@@ -155,7 +161,7 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
                       variant="primary" 
                       size="lg"
                       onClick={handleAddToSession}
-                      className="px-8"
+                      className="px-10 py-3 text-base sm:text-lg"
                     >
                       Add to Session
                     </Button>
@@ -164,7 +170,7 @@ export default function CapturePage({ onNavigate, onFragmentAdded }) {
                       variant="secondary" 
                       size="lg"
                       onClick={handleRetake}
-                      className="px-8"
+                      className="px-10 py-3 text-base sm:text-lg"
                     >
                       Retake
                     </Button>

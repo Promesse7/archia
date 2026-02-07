@@ -70,4 +70,8 @@ const IconButton = React.forwardRef(({
 
 IconButton.displayName = 'IconButton';
 
+// Export all components
 export { IconButton, iconButtonVariants };
+
+// Default export for backward compatibility
+export default IconButton;

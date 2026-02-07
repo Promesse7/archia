@@ -1,7 +1,13 @@
 import React from 'react';
-import { Card, CardContent, Button } from '../components/ui';
+import PropTypes from 'prop-types';
+import { Card } from '../components/ui/Card';
+import { CardContent } from '../components/ui/Card';
+import NavigationButton from '../components/ui/NavigationButton';
+import { useNavigation } from '../contexts/NavigationContext.jsx';
 
-export default function HomePage({ onNavigate, fragmentCount }) {
+export default function HomePage({ fragmentCount }) {
+  const { navigate } = useNavigation();
+
   return (
     <div className="min-h-screen bg-charcoal-950 p-8">
       <div className="max-w-6xl mx-auto space-y-12">
@@ -37,13 +43,14 @@ export default function HomePage({ onNavigate, fragmentCount }) {
                   Photograph or upload pottery fragments for AI analysis
                 </p>
               </div>
-              <Button 
-                onClick={() => onNavigate('capture')}
+              <NavigationButton 
+                to="capture" 
                 className="w-full"
                 size="lg"
+                data-testid="start-capture-button"
               >
                 Start Capture
-              </Button>
+              </NavigationButton>
             </CardContent>
           </Card>
 
@@ -58,15 +65,15 @@ export default function HomePage({ onNavigate, fragmentCount }) {
                   Assemble fragments into complete 3D pottery models
                 </p>
               </div>
-              <Button 
-                onClick={() => onNavigate('reconstruction')}
+              <NavigationButton 
+                to="reconstruct" 
                 className="w-full"
                 size="lg"
                 variant={fragmentCount === 0 ? "ghost" : "primary"}
                 disabled={fragmentCount === 0}
               >
                 {fragmentCount === 0 ? 'Need Fragments' : 'View 3D Model'}
-              </Button>
+              </NavigationButton>
             </CardContent>
           </Card>
 
@@ -81,46 +88,22 @@ export default function HomePage({ onNavigate, fragmentCount }) {
                   Train your eye with archaeological fragment puzzles
                 </p>
               </div>
-              <Button 
-                onClick={() => onNavigate('puzzle')}
+              <NavigationButton 
+                to="puzzle" 
                 className="w-full"
                 size="lg"
                 variant="secondary"
               >
                 Enter Lab
-              </Button>
+              </NavigationButton>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-8 text-center">
-          <div className="space-y-2">
-            <div className="text-3xl font-bold text-amber-500">
-              {fragmentCount}
-            </div>
-            <div className="text-zinc-500 text-sm">
-              Fragments Captured
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-3xl font-bold text-amber-500">
-              {fragmentCount > 0 ? '1' : '0'}
-            </div>
-            <div className="text-zinc-500 text-sm">
-              Sessions Active
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="text-3xl font-bold text-amber-500">
-              AI Ready
-            </div>
-            <div className="text-zinc-500 text-sm">
-              System Status
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+HomePage.propTypes = {
+  fragmentCount: PropTypes.number.isRequired
+};

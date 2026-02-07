@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import * as PropTypes from 'prop-types';
+import { useNavigation } from '../contexts/NavigationContext.jsx';
 
 // Theme context for global theme management
 const ThemeContext = createContext();
@@ -6,66 +8,20 @@ const ThemeContext = createContext();
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within an AppShell');
+    throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
 };
 
-// Navigation context for global navigation state
-const NavigationContext = createContext();
-
-export const useNavigation = () => {
-  const context = useContext(NavigationContext);
-  if (!context) {
-    throw new Error('useNavigation must be used within an AppShell');
-  }
-  return context;
-};
-
-const AppShell = ({ children }) => {
+export const AppShell = ({ children }) => {
   // Global theme state
   const [theme, setTheme] = useState('dark');
+  const { isNavigating } = useNavigation();
   
-  // Navigation state
-  const [currentPage, setCurrentPage] = useState('home');
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [navigationHistory, setNavigationHistory] = useState(['home']);
-
   // Theme management
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
-
-  // Navigation management
-  const navigate = (page) => {
-    if (page === currentPage || isTransitioning) return;
-    
-    setIsTransitioning(true);
-    
-    // Add to history
-    setNavigationHistory(prev => [...prev, page]);
-    
-    // Change page after transition starts
-    setTimeout(() => {
-      setCurrentPage(page);
-      setIsTransitioning(false);
-    }, 150);
-  };
-
-  const goBack = () => {
-    if (navigationHistory.length <= 1) return;
-    
-    setIsTransitioning(true);
-    const newHistory = [...navigationHistory];
-    newHistory.pop();
-    const previousPage = newHistory[newHistory.length - 1];
-    
-    setTimeout(() => {
-      setCurrentPage(previousPage);
-      setNavigationHistory(newHistory);
-      setIsTransitioning(false);
-    }, 150);
-  };
+  }, []);
 
   // Apply theme to document
   useEffect(() => {
@@ -78,29 +34,37 @@ const AppShell = ({ children }) => {
     }
   }, [theme]);
 
-  const themeValue = {
+  // Memoize theme context value to prevent unnecessary re-renders
+  const themeContextValue = useMemo(() => ({
     theme,
     toggleTheme,
     isDark: theme === 'dark'
-  };
-
-  const navigationValue = {
-    currentPage,
-    navigate,
-    goBack,
-    isTransitioning,
-    navigationHistory
-  };
+  }), [theme, toggleTheme]);
 
   return (
-    <ThemeContext.Provider value={themeValue}>
-      <NavigationContext.Provider value={navigationValue}>
-        <div className="min-h-screen bg-zinc-950 text-white overflow-hidden">
+    <ThemeContext.Provider value={themeContextValue}>
+      <div className={`min-h-screen relative ${theme === 'dark' ? 'dark bg-zinc-900' : 'bg-gray-50'}`}>
+        {/* Global loading overlay */}
+        {isNavigating && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center transition-opacity duration-300">
+            <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-xl flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
+              <p className="text-zinc-900 dark:text-white">Loading...</p>
+            </div>
+          </div>
+        )}
+        
+        {/* Main content */}
+        <div className={`transition-opacity duration-300 ${isNavigating ? 'opacity-50' : 'opacity-100'}`}>
           {children}
         </div>
-      </NavigationContext.Provider>
+      </div>
     </ThemeContext.Provider>
   );
+};
+
+AppShell.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default AppShell;

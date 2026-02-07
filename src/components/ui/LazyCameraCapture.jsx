@@ -46,3 +46,6 @@ export const LazyCameraCapture = React.forwardRef((props, ref) => {
   );
 });
 LazyCameraCapture.displayName = 'LazyCameraCapture';
+
+// Default export for backward compatibility
+export default LazyCameraCapture;

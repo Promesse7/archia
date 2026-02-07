@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getEnhancedPipeline } from '../pipeline/enhancedPipeline';
+import { useNavigation } from '../contexts/NavigationContext.jsx';
 
-export default function SplashPage({ onReady }) {
+export default function SplashPage() {
+  const { navigate } = useNavigation();
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState('Initializing...');
   const [isReady, setIsReady] = useState(false);
@@ -22,22 +24,22 @@ export default function SplashPage({ onReady }) {
         setStage('Ready');
         setIsReady(true);
 
-        // Auto-advance after brief delay
+        // Auto-advance to home after brief delay
         setTimeout(() => {
-          onReady();
+          navigate('home');
         }, 1500);
       } catch (err) {
         console.error('Model loading failed:', err);
         setStage('Ready');
         setIsReady(true);
         setTimeout(() => {
-          onReady();
+          navigate('home');
         }, 1500);
       }
     }
 
     preloadModels();
-  }, [onReady]);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center text-ink">

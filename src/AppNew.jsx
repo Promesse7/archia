@@ -1,10 +1,13 @@
-import React, { Suspense, useCallback, useMemo, useState, useEffect } from 'react';
+import React, { Suspense, useCallback, useState, useEffect } from 'react';
 import AppShell from './components/AppShell';
 import FloatingBottomNav from './components/FloatingBottomNav';
 import ScreenContainer from './components/ScreenContainer';
 import LoadingScreen from './components/LoadingScreen';
 import { preloadModels } from './ai/classifier';
 import { getDepthEstimator } from './ai/depthEstimator';
+import { NavigationProvider, useNavigation } from './contexts/NavigationContext.jsx';
+import { FragmentProvider } from './contexts/FragmentContext';
+import * as PropTypes from "prop-types";
 
 // Lazy load pages for performance
 const SplashPage = React.lazy(() => import('./pages/SplashPage'));
@@ -15,11 +18,11 @@ const GalleryPage = React.lazy(() => import('./pages/GalleryPage'));
 const PuzzlePage = React.lazy(() => import('./pages/Puzzle'));
 const AboutPage = React.lazy(() => import('./pages/AboutPage'));
 
-// Proper Error boundary component for graceful error handling
+// Error boundary for page loading
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -27,8 +30,7 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
-    this.setState({ errorInfo });
+    console.error('Page rendering error:', error, errorInfo);
   }
 
   render() {
@@ -56,6 +58,10 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+ErrorBoundary.propTypes = {
+  children: PropTypes.node.isRequired
+};
+
 // Lazy loading wrapper with error boundary
 const LazyPageWrapper = ({ children, fallback = null }) => (
   <ErrorBoundary>
@@ -76,31 +82,52 @@ const LazyPageWrapper = ({ children, fallback = null }) => (
   </ErrorBoundary>
 );
 
+LazyPageWrapper.propTypes = {
+  children: PropTypes.node.isRequired,
+  fallback: PropTypes.node
+};
+
 // Prevent double-loading in React StrictMode
 let modelsStarted = false;
 
+const AppContent = () => {
+  const { currentPage, fragments } = useNavigation();
+
+  // Render current page based on navigation state
+  const renderPage = () => {
+    const pages = {
+      splash: <SplashPage />,
+      home: <HomePage fragmentCount={fragments.length} />,
+      capture: <CapturePage />,
+      reconstruct: <ReconstructionPage />,
+      gallery: <GalleryPage />,
+      puzzle: <PuzzlePage />,
+      about: <AboutPage />
+    };
+
+    return (
+      <LazyPageWrapper>
+        {pages[currentPage] || <div className="p-4">Page not found: {currentPage}</div>}
+      </LazyPageWrapper>
+    );
+  };
+
+  return (
+    <div className="relative min-h-screen">
+      {renderPage()}
+    </div>
+  );
+};
+
+AppContent.propTypes = {
+  // Add any necessary prop types
+};
+
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('splash');
-  const [fragments, setFragments] = useState([]);
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingStage, setLoadingStage] = useState("Initializing...");
   const [loadingError, setLoadingError] = useState(null);
-
-  // Navigation function
-  const navigate = useCallback((page) => {
-    setCurrentPage(page);
-  }, []);
-
-  // Handle fragment addition
-  const handleFragmentAdded = useCallback((fragment) => {
-    setFragments(prev => [...prev, fragment]);
-  }, []);
-
-  // Handle splash completion
-  const handleSplashComplete = useCallback(() => {
-    navigate('home');
-  }, [navigate]);
 
   // Load models on mount
   useEffect(() => {
@@ -141,6 +168,8 @@ export default function App() {
         console.error("Model loading error:", err);
         setLoadingError(err.message);
         setLoadingStage("Failed to load models");
+        // Even if models fail to load, we'll still let the app start
+        setModelsLoaded(true);
       }
     }
 
@@ -158,48 +187,16 @@ export default function App() {
     );
   }
 
-  // Render screen with transitions
-  const renderScreen = (screenId, component) => (
-    <LazyPageWrapper>
-      <ScreenContainer screenId={screenId}>
-        {component}
-      </ScreenContainer>
-    </LazyPageWrapper>
-  );
-
-  // All screens with ScreenContainer
-  const screens = (
-    <>
-      {renderScreen('splash', <SplashPage onReady={handleSplashComplete} />)}
-      {renderScreen('home', <HomePage onNavigate={navigate} fragmentCount={fragments.length} />)}
-      {renderScreen('capture', <CapturePage onNavigate={navigate} onFragmentAdded={handleFragmentAdded} />)}
-      {renderScreen('reconstruct', <ReconstructionPage onNavigate={navigate} fragments={fragments} />)}
-      {renderScreen('gallery', <GalleryPage onNavigate={navigate} fragments={fragments} />)}
-      {renderScreen('puzzle', <PuzzlePage onNavigate={navigate} />)}
-      {renderScreen('about', <AboutPage onNavigate={navigate} />)}
-    </>
-  );
-
-  // Splash screen gets special treatment (no navigation)
-  if (currentPage === 'splash') {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
-        <AppShell>
-          {screens}
-        </AppShell>
-      </Suspense>
-    );
-  }
-
-  // Main app with navigation
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
-      <AppShell>
-        <div className="relative min-h-screen pb-24">
-          {screens}
-        </div>
-        <FloatingBottomNav />
-      </AppShell>
-    </Suspense>
+    <NavigationProvider>
+      <FragmentProvider>
+        <AppShell>
+          <div className="relative min-h-screen pb-24">
+            <AppContent />
+            <FloatingBottomNav />
+          </div>
+        </AppShell>
+      </FragmentProvider>
+    </NavigationProvider>
   );
 }

@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent, Button, SectionHeader } from '../components/ui';
-import { LazyReconstructionViewer } from '../components/ui/LazyReconstructionViewer';
+import { Card, CardContent, Button, SectionHeader, IconButton } from '../components/ui';
+import EnhancedReconstructionViewer from '../components/EnhancedReconstructionViewer';
 import { useMemoryManager } from '../utils/memoryManager.js';
 import { getPotteryReconstructor } from '../reconstruction/potteryRebuilder';
 import { getFragmentClassifier } from '../ai/classifier';
+import { useFragmentContext } from '../contexts/FragmentContext';
+import { useNavigation } from '../contexts/NavigationContext';
+import FragmentList from '../components/FragmentList';
 
 // Icon components for controls
 const RebuildIcon = () => (
@@ -31,32 +34,25 @@ const CameraIcon = () => (
   </svg>
 );
 
-export default function ReconstructionPage({ onNavigate, fragments }) {
+export default function ReconstructionPage({ onNavigate }) {
+  const { selectedFragments } = useFragmentContext();
+  const { fragments } = useNavigation(); // Get fragments from NavigationContext
   const [reconstructedMesh, setReconstructedMesh] = useState(null);
   const [isViewerReady, setIsViewerReady] = useState(false);
   const [viewerScale, setViewerScale] = useState(0.95);
+  const [activeFragmentId, setActiveFragmentId] = useState(null);
   const viewerRef = useRef(null);
 
-  const hasFragments = fragments && fragments.length > 0;
+  const fragmentsToUse = selectedFragments.length > 0 ? selectedFragments : fragments;
+  const hasFragments = fragmentsToUse && fragmentsToUse.length > 0;
 
-  // Auto-reconstruct when fragments are available
-  useEffect(() => {
-    if (hasFragments && fragments.length > 0) {
-      console.log("Auto-reconstructing with fragments:", fragments.length);
-      reconstructPottery(fragments);
-    }
-  }, [fragments]);
+  // Handle fragment click for highlighting
+  const handleFragmentClick = useCallback((fragmentId) => {
+    setActiveFragmentId(activeFragmentId === fragmentId ? null : fragmentId);
+  }, [activeFragmentId]);
 
-  // Animate viewer scale on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setViewerScale(1.0);
-      setIsViewerReady(true);
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const reconstructPottery = async (fragmentsList) => {
+  // Define reconstructPottery first since it's used in other functions
+  const reconstructPottery = useCallback(async (fragmentsList) => {
     try {
       console.log("Starting reconstruction with fragments:", fragmentsList.length);
       
@@ -100,27 +96,44 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
     } catch (err) {
       console.error("Reconstruction error:", err);
     }
-  };
+  }, []);
 
-  const handleRebuild = () => {
+  const handleRebuild = useCallback(() => {
     if (hasFragments) {
-      reconstructPottery(fragments);
+      console.log('Rebuilding reconstruction...');
+      reconstructPottery(fragmentsToUse);
     }
-  };
+  }, [fragmentsToUse, hasFragments, reconstructPottery]);
 
-  const handleRotate = () => {
-    // Trigger rotation in viewer
+  const handleRotate = useCallback(() => {
     if (viewerRef.current) {
       viewerRef.current.resetCamera();
     }
-  };
+  }, []);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setReconstructedMesh(null);
     if (viewerRef.current) {
       viewerRef.current.reset();
     }
-  };
+  }, []);
+
+  // Auto-reconstruct when fragments are available
+  useEffect(() => {
+    if (hasFragments && fragmentsToUse.length > 0) {
+      console.log("Auto-reconstructing with fragments:", fragmentsToUse.length);
+      reconstructPottery(fragmentsToUse);
+    }
+  }, [fragmentsToUse, hasFragments, reconstructPottery]);
+
+  // Animate viewer scale on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setViewerScale(1.0);
+      setIsViewerReady(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const viewerHeight = 'calc(100vh - 200px)'; // Account for nav and header
 
@@ -130,13 +143,26 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
         {/* Section Header */}
         <div className="absolute top-0 left-0 right-0 z-10 bg-black/80 backdrop-blur-sm border-b border-charcoal-900/50">
           <div className="max-w-7xl mx-auto px-6 py-4">
-            <SectionHeader
-              title="3D Reconstruction"
-              subtitle={hasFragments 
-                ? `Analycharcoalg ${fragments.length} fragment${fragments.length !== 1 ? 's' : ''}` 
-                : "Archaeological reconstruction workspace"
-              }
-            />
+            <div className="flex items-center justify-between">
+              <Button 
+                onClick={() => window.history.back()}
+                variant="ghost"
+                size="sm"
+                className="mb-2"
+              >
+                ← Back to Gallery
+              </Button>
+              <div className="text-center flex-1">
+                <SectionHeader
+                  title="3D Reconstruction"
+                  subtitle={hasFragments 
+                    ? `Analyzing ${fragmentsToUse.length} fragment${fragmentsToUse.length !== 1 ? 's' : ''}` 
+                    : "Archaeological reconstruction workspace"
+                  }
+                />
+              </div>
+              <div className="w-20"></div> {/* Spacer for alignment */}
+            </div>
           </div>
         </div>
 
@@ -171,13 +197,22 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
                     
                     {/* 3D Viewer */}
                     <div className="relative w-full h-full">
-                      <LazyReconstructionViewer
+                      <EnhancedReconstructionViewer
+                        fragments={fragmentsToUse}
+                        activeFragmentId={activeFragmentId}
+                        onFragmentHover={setActiveFragmentId}
                         mesh={reconstructedMesh}
-                        classification={fragments[fragments.length - 1]?.classification || null}
-                        showPointCloud={false}
+                        classification={fragmentsToUse[fragmentsToUse.length - 1]?.classification || null}
+                        showPointCloud={true}
                         showMesh={true}
                         autoRotate={false}
                         onReady={() => console.log('3D viewer ready')}
+                      />
+                      
+                      <FragmentList 
+                        fragments={fragmentsToUse}
+                        activeFragmentId={activeFragmentId}
+                        onFragmentClick={handleFragmentClick}
                       />
                     </div>
 

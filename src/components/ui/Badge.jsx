@@ -42,4 +42,8 @@ const Badge = React.forwardRef(({
 
 Badge.displayName = 'Badge';
 
+// Export all components
 export { Badge, badgeVariants };
+
+// Default export for backward compatibility
+export default Badge;

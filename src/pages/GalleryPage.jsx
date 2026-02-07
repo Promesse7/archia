@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigation } from '../contexts/NavigationContext';
+import { useFragmentContext } from '../contexts/FragmentContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, SectionHeader } from '../components/ui';
 
 // Icon components
@@ -27,14 +29,30 @@ const ListIcon = () => (
   </svg>
 );
 
-export default function GalleryPage({ onNavigate, fragments = [] }) {
+export default function GalleryPage() {
   const [selectedFragments, setSelectedFragments] = useState(new Set());
   const [hoveredFragment, setHoveredFragment] = useState(null);
   const [focusedFragment, setFocusedFragment] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [lastAction, setLastAction] = useState(null);
-
+  const { navigate, fragments } = useNavigation(); // Get fragments from NavigationContext
+  const { setSelectedFragments: setGlobalSelectedFragments } = useFragmentContext();
   const hasFragments = fragments && fragments.length > 0;
+
+  // Handle viewing a single fragment in 3D
+  const handleViewFragment = useCallback((fragment) => {
+    setGlobalSelectedFragments([fragment]);
+    navigate('reconstruct');
+  }, [navigate, setGlobalSelectedFragments]);
+
+  // Handle viewing all selected fragments in 3D
+  const handleViewSelected = useCallback(() => {
+    const selected = fragments.filter(f => 
+      selectedFragments.has(f.timestamp || f.id)
+    );
+    setGlobalSelectedFragments(selected);
+    navigate('reconstruct');
+  }, [fragments, selectedFragments, navigate, setGlobalSelectedFragments]);
 
   // Selection management with proper state tracking
   const handleFragmentClick = useCallback((fragmentId, event) => {
@@ -86,9 +104,9 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
   const handleReconstructSelected = useCallback(() => {
     if (selectedFragments.size > 0) {
       setLastAction('reconstruct_selected');
-      onNavigate('reconstruct');
+      handleViewSelected();
     }
-  }, [selectedFragments.size, onNavigate]);
+  }, [selectedFragments.size, handleViewSelected]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -248,14 +266,27 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                   >
                     {selectedFragments.size === fragments.length ? 'Deselect All' : 'Select All'}
                   </Button>
+                  {selectedFragments.size > 0 && (
+                    <Button
+                      onClick={handleViewSelected}
+                      variant="primary"
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-700"
+                      aria-label={`View ${selectedFragments.size} selected fragments in 3D`}
+                    >
+                      View {selectedFragments.size} in 3D
+                    </Button>
+                  )}
                   <Button
-                    onClick={handleReconstructSelected}
-                    variant="primary"
+                    onClick={() => {
+                      setGlobalSelectedFragments(fragments);
+                      navigate('reconstruct');
+                    }}
+                    variant="outline"
                     size="sm"
-                    disabled={selectedFragments.size === 0}
-                    aria-label={`Reconstruct ${selectedFragments.size} selected fragments`}
+                    aria-label="View all fragments in 3D"
                   >
-                    Reconstruct Selected ({selectedFragments.size})
+                    View All in 3D
                   </Button>
                 </div>
               )}
@@ -419,11 +450,11 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                               className="flex-1 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onNavigate('reconstruct');
+                                handleViewFragment(fragment);
                               }}
                               aria-label="View this fragment in reconstruction"
                             >
-                              View
+                              View in 3D
                             </Button>
                           </div>
                         </div>
@@ -501,11 +532,11 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onNavigate('reconstruct');
+                              handleViewFragment(fragment);
                             }}
                             aria-label="View this fragment in reconstruction"
                           >
-                            View
+                            View in 3D
                           </Button>
                         </div>
                       </div>
@@ -548,12 +579,13 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
                     Clear Selection
                   </Button>
                   <Button
-                    onClick={handleReconstructSelected}
+                    onClick={handleViewSelected}
                     variant="primary"
                     size="sm"
-                    aria-label={`Reconstruct ${selectedFragments.size} selected fragments`}
+                    className="bg-amber-600 hover:bg-amber-700"
+                    aria-label={`View ${selectedFragments.size} selected fragments in 3D`}
                   >
-                    Reconstruct
+                    View in 3D
                   </Button>
                 </div>
               </div>
@@ -564,7 +596,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
         {/* Enhanced Navigation */}
         <nav className="text-center space-x-4" aria-label="Gallery navigation">
           <Button
-            onClick={() => onNavigate('home')}
+            onClick={() => navigate('home')}
             variant="ghost"
             aria-label="Go back to home page"
           >
@@ -572,7 +604,7 @@ export default function GalleryPage({ onNavigate, fragments = [] }) {
           </Button>
           {hasFragments && (
             <Button
-              onClick={() => onNavigate('capture')}
+              onClick={() => navigate('capture')}
               variant="secondary"
               aria-label="Go to capture page to add more fragments"
             >

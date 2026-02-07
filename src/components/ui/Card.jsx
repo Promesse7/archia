@@ -95,4 +95,8 @@ CardDescription.displayName = 'CardDescription';
 CardContent.displayName = 'CardContent';
 CardFooter.displayName = 'CardFooter';
 
+// Export all components
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, cardVariants };
+
+// Default export for backward compatibility
+export default Card;

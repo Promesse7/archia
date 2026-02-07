@@ -31,4 +31,8 @@ const SectionHeader = React.forwardRef(({ title, subtitle, action, className, ..
 
 SectionHeader.displayName = 'SectionHeader';
 
+// Export all components
 export { SectionHeader };
+
+// Default export for backward compatibility
+export default SectionHeader;

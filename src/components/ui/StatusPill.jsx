@@ -50,4 +50,8 @@ const StatusPill = React.forwardRef(({ status, message, className, ...props }, r
 
 StatusPill.displayName = 'StatusPill';
 
+// Export all components
 export { StatusPill };
+
+// Default export for backward compatibility
+export default StatusPill;

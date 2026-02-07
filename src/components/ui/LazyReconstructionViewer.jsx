@@ -59,3 +59,6 @@ export const LazyReconstructionViewer = React.forwardRef(
 }
 );
 LazyReconstructionViewer.displayName = 'LazyReconstructionViewer';
+
+// Export as default for backward compatibility
+export default LazyReconstructionViewer;

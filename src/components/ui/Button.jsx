@@ -50,4 +50,8 @@ const Button = React.forwardRef(({
 
 Button.displayName = 'Button';
 
+// Export all components
 export { Button, buttonVariants };
+
+// Default export for backward compatibility
+export default Button;
