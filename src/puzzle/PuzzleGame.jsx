@@ -24,8 +24,8 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
     }
   };
 
-  const filteredPuzzles = difficulty === "all" 
-    ? puzzleImages 
+  const filteredPuzzles = difficulty === "all"
+    ? puzzleImages
     : getPuzzlesByDifficulty(difficulty);
 
   if (selectedPuzzle) {
@@ -33,17 +33,17 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
       <div className="p-5 max-w-[1200px] mx-auto">
         <div className="flex flex-wrap items-center justify-between mb-7.5 gap-4">
           <div>
-            <h2 className="m-0 mb-1.25 text-2xl text-ink">
+            <h2 className="m-0 mb-1.25 text-2xl text-charcoal-900 dark:text-charcoal-100">
               {selectedPuzzle.name}
             </h2>
-            <p className="m-0 text-muted text-sm">
+            <p className="m-0 text-charcoal-600 dark:text-charcoal-400 text-sm">
               {selectedPuzzle.description}
             </p>
           </div>
-          
+
           <button
             onClick={handleBackToGallery}
-            className="px-5 py-2.5 bg-muted text-white rounded-md cursor-pointer text-base font-medium hover:bg-muted/80 transition-colors"
+            className="px-5 py-2.5 bg-charcoal-600 dark:bg-charcoal-700 text-white rounded-md cursor-pointer text-base font-medium hover:bg-charcoal-700 dark:hover:bg-charcoal-800 transition-colors"
           >
             ← Back to Gallery
           </button>
@@ -68,16 +68,16 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
     }}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1 style={{ 
+        <h1 style={{
           fontSize: '36px',
           margin: '0 0 10px 0',
-          color: '#333'
+          color: '#111827'
         }}>
           🏺 Archaeology Puzzle Gallery
         </h1>
-        <p style={{ 
+        <p style={{
           fontSize: '18px',
-          color: '#666',
+          color: '#6b7280',
           margin: 0
         }}>
           Explore ancient artifacts through interactive jigsaw puzzles
@@ -89,11 +89,10 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
           <button
             key={level}
             onClick={() => setDifficulty(level)}
-            className={`px-5 py-2.5 rounded-full cursor-pointer text-sm font-medium capitalize transition-all duration-300 ${
-              difficulty === level 
-                ? 'bg-accent text-white' 
-                : 'bg-surface text-ink hover:bg-surface2'
-            }`}
+            className={`px-5 py-2.5 rounded-full cursor-pointer text-sm font-medium capitalize transition-all duration-300 ${difficulty === level
+                ? 'bg-clay-600 text-white'
+                : 'bg-charcoal-200 dark:bg-charcoal-700 text-charcoal-700 dark:text-charcoal-300 hover:bg-charcoal-300 dark:hover:bg-charcoal-600'
+              }`}
           >
             {level}
           </button>
@@ -105,26 +104,26 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
           <div
             key={puzzle.id}
             onClick={() => handleSelectPuzzle(puzzle)}
-            className="bg-surface rounded-xl overflow-hidden shadow-soft cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lift"
+            className="bg-charcoal-100 dark:bg-charcoal-800 rounded-xl overflow-hidden shadow-soft cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lift border border-charcoal-200 dark:border-charcoal-700"
           >
-            <div className="w-full h-50 bg-surface2 flex items-center justify-center overflow-hidden">
+            <div className="w-full h-50 bg-charcoal-200 dark:bg-charcoal-700 flex items-center justify-center overflow-hidden">
               <img
                 src={puzzle.src}
                 alt={puzzle.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   e.target.style.display = 'none';
-                  e.target.parentElement.innerHTML = '<div class="text-muted text-5xl">🏺</div>';
+                  e.target.parentElement.innerHTML = '<div class="text-charcoal-500 dark:text-charcoal-400 text-5xl">🏺</div>';
                 }}
               />
             </div>
 
             <div className="p-4">
-              <h3 className="m-0 mb-2 text-lg text-ink">
+              <h3 className="m-0 mb-2 text-lg text-charcoal-900 dark:text-charcoal-100">
                 {puzzle.name}
               </h3>
-              
-              <p className="m-0 mb-3 text-sm text-muted leading-relaxed">
+
+              <p className="m-0 mb-3 text-sm text-charcoal-600 dark:text-charcoal-400 leading-relaxed">
                 {puzzle.description}
               </p>
 
@@ -133,7 +132,7 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
                   {puzzle.difficulty}
                 </span>
 
-                <span className="text-xs text-muted">
+                <span className="text-xs text-charcoal-600 dark:text-charcoal-400">
                   {puzzle.pieces} pieces
                 </span>
               </div>
@@ -142,16 +141,16 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
         ))}
       </div>
       {filteredPuzzles.length === 0 && (
-        <div className="text-center py-15 px-5 text-muted">
+        <div className="text-center py-15 px-5 text-charcoal-600 dark:text-charcoal-400">
           <p className="text-lg">No puzzles found for this difficulty level</p>
         </div>
       )}
 
-      <div className="bg-surface p-7.5 rounded-xl mt-10">
-        <h3 className="m-0 mb-4 text-lg text-ink">
+      <div className="bg-charcoal-100 dark:bg-charcoal-800 p-7.5 rounded-xl mt-10 border border-charcoal-200 dark:border-charcoal-700">
+        <h3 className="m-0 mb-4 text-lg text-charcoal-900 dark:text-charcoal-100">
           How to Play
         </h3>
-        <ul className="m-0 pl-5 text-muted leading-relaxed">
+        <ul className="m-0 pl-5 text-charcoal-600 dark:text-charcoal-400 leading-relaxed">
           <li>Choose a difficulty level to filter puzzles</li>
           <li>Click on any puzzle to start playing</li>
           <li>Drag and drop pieces to reconstruct the artifact</li>

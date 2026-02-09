@@ -13,9 +13,9 @@ import * as PropTypes from "prop-types";
 const SplashPage = React.lazy(() => import('./pages/SplashPage'));
 const HomePage = React.lazy(() => import('./pages/HomePage'));
 const CapturePage = React.lazy(() => import('./pages/CapturePage'));
-const ReconstructionPage = React.lazy(() => import('./pages/Reconstruct'));
+const ReconstructionPage = React.lazy(() => import('./pages/ReconstructionPage'));
 const GalleryPage = React.lazy(() => import('./pages/GalleryPage'));
-const PuzzlePage = React.lazy(() => import('./pages/Puzzle'));
+const PuzzlePage = React.lazy(() => import('./pages/PuzzlePage'));
 const AboutPage = React.lazy(() => import('./pages/AboutPage'));
 
 // Error boundary for page loading
@@ -65,7 +65,7 @@ ErrorBoundary.propTypes = {
 // Lazy loading wrapper with error boundary
 const LazyPageWrapper = ({ children, fallback = null }) => (
   <ErrorBoundary>
-    <Suspense 
+    <Suspense
       fallback={
         fallback || (
           <div className="min-h-screen bg-zinc-900 text-white flex items-center justify-center">
@@ -139,7 +139,7 @@ export default function App() {
         // Stage 1: Depth Estimator (0-25%)
         setLoadingStage("Initializing depth estimator...");
         setLoadingProgress(5);
-        
+
         await getDepthEstimator();
         setLoadingProgress(25);
         setLoadingStage("Depth estimator ready");
@@ -148,7 +148,7 @@ export default function App() {
 
         // Stage 2-4: MobileNet & Classifier (25-100%)
         setLoadingStage("Loading AI models...");
-        
+
         const success = await preloadModels((progressData) => {
           const mappedProgress = 25 + (progressData.percent * 0.75);
           setLoadingProgress(mappedProgress);
@@ -179,7 +179,7 @@ export default function App() {
   // Show loading screen if models aren't loaded
   if (!modelsLoaded) {
     return (
-      <LoadingScreen 
+      <LoadingScreen
         progress={loadingProgress}
         stage={loadingStage}
         error={loadingError}

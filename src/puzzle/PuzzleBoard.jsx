@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-export default function PuzzleBoard({ 
-  imageSrc, 
-  rows = 4, 
+export default function PuzzleBoard({
+  imageSrc,
+  rows = 4,
   cols = 4,
-  onComplete = () => {},
+  onComplete = () => { },
   pieceSize = 80,
   snapThreshold = 30,
   showGrid = true
@@ -25,10 +25,10 @@ export default function PuzzleBoard({
   const rafRef = useRef(null);
   const lastProgressUpdateRef = useRef(0);
   const initTokenRef = useRef(null);
-  const [containerSize, setContainerSize] = useState({ 
-    width: cols * pieceSize, 
-    height: rows * pieceSize, 
-    scale: 1 
+  const [containerSize, setContainerSize] = useState({
+    width: cols * pieceSize,
+    height: rows * pieceSize,
+    scale: 1
   });
 
   // Responsive sizing
@@ -76,7 +76,8 @@ export default function PuzzleBoard({
   // Initialize puzzle with error handling
   useEffect(() => {
     console.log('PuzzleBoard: Initializing with imageSrc:', imageSrc);
-    
+    console.log('PuzzleBoard: window.Puzzle available:', !!window.Puzzle);
+
     if (!imageSrc) {
       console.log('PuzzleBoard: No imageSrc provided');
       setImageError(true);
@@ -89,13 +90,13 @@ export default function PuzzleBoard({
     setLoadedImage(null);
     initTokenRef.current = null;
     const img = new Image();
-    
+
     const handleLoad = () => {
-      console.log('PuzzleBoard: Image loaded successfully');
+      console.log('PuzzleBoard: Image loaded successfully, dimensions:', img.width, 'x', img.height);
       setLoadedImage(img);
       setLoading(false);
     };
-    
+
     const handleError = () => {
       console.log('PuzzleBoard: Image failed to load');
       setImageError(true);
@@ -127,7 +128,7 @@ export default function PuzzleBoard({
   function initializePuzzle(img) {
     console.log('PuzzleBoard: Initializing puzzle with img dimensions:', img.width, 'x', img.height);
     console.log('PuzzleBoard: Container size:', containerSize);
-    
+
     // Store image dimensions for background sizing
     setImageDimensions({ width: img.width, height: img.height });
 
@@ -229,15 +230,15 @@ export default function PuzzleBoard({
   const calculateSnapPosition = useCallback((piece, targetX, targetY) => {
     const gridX = Math.round(targetX / pieceSize) * pieceSize;
     const gridY = Math.round(targetY / pieceSize) * pieceSize;
-    
+
     const distance = Math.sqrt(
       Math.pow(targetX - gridX, 2) + Math.pow(targetY - gridY, 2)
     );
-    
+
     if (distance < snapThreshold) {
       return { x: gridX, y: gridY, snapped: true };
     }
-    
+
     return { x: targetX, y: targetY, snapped: false };
   }, [pieceSize, snapThreshold]);
 
@@ -245,7 +246,7 @@ export default function PuzzleBoard({
   const handleDragStart = useCallback((e, piece) => {
     setDraggedPiece(piece);
     e.dataTransfer.effectAllowed = 'move';
-    
+
     // Store piece ID for mobile touch events
     if (e.dataTransfer) {
       e.dataTransfer.setData('text/plain', piece.id);
@@ -261,7 +262,7 @@ export default function PuzzleBoard({
   // Handle drop with auto-snapping
   const handleDrop = useCallback((e, targetPiece) => {
     e.preventDefault();
-    
+
     if (!draggedPiece || draggedPiece.id === targetPiece.id) {
       setDraggedPiece(null);
       return;
@@ -313,17 +314,17 @@ export default function PuzzleBoard({
   const handleTouchMove = useCallback((e) => {
     if (!touchStart) return;
     e.preventDefault();
-    
+
     const touch = e.touches[0];
     const deltaX = touch.clientX - touchStart.x;
     const deltaY = touch.clientY - touchStart.y;
-    
+
     const newPieces = pieces.map(piece => {
       if (piece.id === touchStart.piece.id) {
         const newX = touchStart.pieceX + deltaX;
         const newY = touchStart.pieceY + deltaY;
         const snap = calculateSnapPosition(piece, newX, newY);
-        
+
         return {
           ...piece,
           x: snap.x,
@@ -333,42 +334,42 @@ export default function PuzzleBoard({
       }
       return piece;
     });
-    
+
     setPieces(newPieces);
   }, [touchStart, pieces, calculateSnapPosition]);
 
   const handleTouchEnd = useCallback((e) => {
     if (!touchStart) return;
     e.preventDefault();
-    
+
     // Find the piece at the current position
     const currentPiece = pieces.find(p => p.id === touchStart.piece.id);
     if (!currentPiece) return;
-    
+
     // Check if piece is over another piece
     const targetPiece = pieces.find(piece => {
       if (piece.id === currentPiece.id) return false;
       const distance = Math.sqrt(
-        Math.pow(piece.x - currentPiece.x, 2) + 
+        Math.pow(piece.x - currentPiece.x, 2) +
         Math.pow(piece.y - currentPiece.y, 2)
       );
       return distance < pieceSize;
     });
-    
+
     if (targetPiece) {
       handleDrop(e, targetPiece);
     }
-    
+
     setTouchStart(null);
     setDraggedPiece(null);
   }, [touchStart, pieces, pieceSize, handleDrop]);
 
   // Check completion
   const checkCompletion = useCallback((currentPieces) => {
-    const isComplete = currentPieces.every(piece => 
+    const isComplete = currentPieces.every(piece =>
       piece.currentPosition === piece.correctPosition
     );
-    
+
     if (isComplete && !isCompleted) {
       setIsCompleted(true);
       onComplete();
@@ -378,7 +379,7 @@ export default function PuzzleBoard({
   // Calculate progress percentage
   const calculateProgress = useCallback(() => {
     if (pieces.length === 0) return 0;
-    const correctPieces = pieces.filter(piece => 
+    const correctPieces = pieces.filter(piece =>
       piece.currentPosition === piece.correctPosition
     ).length;
     return Math.round((correctPieces / pieces.length) * 100);
@@ -439,32 +440,32 @@ export default function PuzzleBoard({
   return (
     <div className="flex flex-col items-center gap-5 p-5 max-w-screen overflow-hidden">
       <div className="text-center">
-        <h2 className="m-0 mb-2.5 text-[clamp(20px,4vw,28px)] text-ink">
+        <h2 className="m-0 mb-2.5 text-[clamp(20px,4vw,28px)] text-charcoal-900 dark:text-charcoal-100">
           🏺 Archaeological Puzzle
         </h2>
-        <p className="m-0 text-muted text-[clamp(14px,2.5vw,16px)]">
+        <p className="m-0 text-charcoal-600 dark:text-charcoal-400 text-[clamp(14px,2.5vw,16px)]">
           Drag pieces to reconstruct the artifact
         </p>
       </div>
       {/* Progress Bar */}
       <div className="w-full max-w-[600px] text-center">
-        <div className="relative w-full h-6 bg-surface rounded-lg mb-2 shadow-inner">
-          <progress 
-            className="absolute inset-0 w-full h-6 [&::-webkit-progress-bar]:bg-surface [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-accent [&::-webkit-progress-value]:to-accentHover rounded-lg"
+        <div className="relative w-full h-6 bg-charcoal-200 dark:bg-charcoal-700 rounded-lg mb-2 shadow-inner">
+          <progress
+            className="absolute inset-0 w-full h-6 [&::-webkit-progress-bar]:bg-charcoal-200 [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-clay-500 [&::-webkit-progress-value]:to-clay-600 rounded-lg"
             value={progress}
             max={100}
           />
-          <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-ink mix-blend-difference">
+          <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-charcoal-900 dark:text-charcoal-100 mix-blend-difference">
             {progress > 10 && `${progress}%`}
           </div>
         </div>
-        <div className="text-[clamp(12px,2vw,14px)] text-muted font-medium">
+        <div className="text-[clamp(12px,2vw,14px)] text-charcoal-600 dark:text-charcoal-400 font-medium">
           {pieces.filter(p => p?.snapped).length} of {pieces.length} pieces placed
         </div>
       </div>
 
       {/* Puzzle Container */}
-      <div 
+      <div
         ref={containerRef}
         style={{
           position: 'relative',
@@ -475,7 +476,7 @@ export default function PuzzleBoard({
         <div className="absolute top-2.5 left-2.5 flex gap-2 z-10">
           <button
             onClick={toggleHint}
-            className="px-5 py-2.5 bg-clay text-white rounded-lg font-medium hover:bg-clay/80 transition-colors"
+            className="px-5 py-2.5 bg-clay-600 text-white rounded-lg font-medium hover:bg-clay-700 transition-colors"
           >
             {showHint ? 'Hide Hint' : 'Show Hint'}
           </button>
@@ -502,22 +503,26 @@ export default function PuzzleBoard({
           </button>
         </div>
         {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 z-[999]">
-            <div className="text-ink">Loading puzzle...</div>
-            <div className="w-12 h-12 border-3 border-surface border-t-accent rounded-full animate-spin mt-2" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-charcoal-50/90 dark:bg-charcoal-900/90 z-[999]">
+            <div className="text-charcoal-900 dark:text-charcoal-100">Loading puzzle...</div>
+            <div className="w-12 h-12 border-3 border-charcoal-300 border-t-clay-500 rounded-full animate-spin mt-2" />
           </div>
         )}
+        {/* Main Puzzle Canvas - This was missing! */}
+        <canvas
+          ref={canvasRef}
+          className="absolute inset-0 w-full h-full z-0"
+          style={{ touchAction: 'none' }}
+        />
+
         {showHint && (
           <div className="absolute inset-0 pointer-events-none z-20">
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 w-full h-full z-2"
-            />
+            <div className="absolute inset-0 bg-black/10" />
           </div>
         )}
 
         {showGrid && (
-          <div 
+          <div
             className="absolute inset-0 pointer-events-none z-10"
             style={{
               backgroundImage: `
@@ -537,7 +542,7 @@ export default function PuzzleBoard({
               Puzzle Complete!
             </div>
             <div className="text-[clamp(14px,2.5vw,18px)] opacity-90 text-center mb-7.5 max-w-[80%]">
-              Excellent archaeological reconstruction skills! 
+              Excellent archaeological reconstruction skills!
               You've successfully restored this ancient artifact.
             </div>
             <button
@@ -550,11 +555,11 @@ export default function PuzzleBoard({
         )}
       </div>
 
-      <div className="text-center text-muted text-[clamp(12px,2vw,14px)] max-w-[600px] leading-6 p-4 bg-surface rounded-lg border">
-        <span className="font-semibold text-ink">🔍 How to play:</span>{' '}
-        Drag and drop puzzle pieces to reconstruct the archaeological image. 
-        Pieces will <span className="text-blue-600 font-semibold">snap</span> when close to the correct position. 
-        <span className="text-green-600 font-semibold"> Green borders</span> indicate pieces in the correct position. 
+      <div className="text-center text-charcoal-600 dark:text-charcoal-400 text-[clamp(12px,2vw,14px)] max-w-[600px] leading-6 p-4 bg-charcoal-100 dark:bg-charcoal-800 rounded-lg border border-charcoal-200 dark:border-charcoal-700">
+        <span className="font-semibold text-charcoal-900 dark:text-charcoal-100">🔍 How to play:</span>{' '}
+        Drag and drop puzzle pieces to reconstruct the archaeological image.
+        Pieces will <span className="text-green-600 font-semibold">snap</span> when close to the correct position.
+        <span className="text-green-600 font-semibold"> Green borders</span> indicate pieces in the correct position.
         This trains pattern recognition skills essential for real archaeological reconstruction work.
       </div>
     </div>

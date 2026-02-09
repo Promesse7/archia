@@ -74,7 +74,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
     } catch (err) {
       let msg = err.message;
       if (err.name === "NotAllowedError") msg = "Camera permission denied";
-      if (err.name === "NotFoundError")    msg = "No camera available";
+      if (err.name === "NotFoundError") msg = "No camera available";
       setError(msg);
       setStatus("Camera error");
     }
@@ -249,9 +249,9 @@ export default function CameraCapture({ onResult, modelsReady }) {
       {isMobile && stream && !processing && (
         <button
           onClick={captureFromCamera}
-          className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-white/90 border-4 border-white shadow-lg z-10"
+          className="absolute bottom-6 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-charcoal-800/90 border-4 border-ochre-500 shadow-lg z-10 transition-all duration-200 hover:scale-105 active:scale-95"
         >
-          <div className="w-full h-full rounded-full bg-red-600" />
+          <div className="w-full h-full rounded-full bg-ochre-500" />
         </button>
       )}
     </div>

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
@@ -32,6 +32,72 @@ const HeritageIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
   </svg>
 );
+
+// Interactive 3D hotspots for metadata
+const MetadataHotspot = ({ position, data, onHover, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <mesh
+      position={position}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick(data);
+      }}
+      onPointerOver={() => {
+        setHovered(true);
+        onHover(data);
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        onHover(null);
+      }}
+    >
+      <sphereGeometry args={[0.1, 8, 8]} />
+      <meshStandardMaterial
+        color={hovered ? '#f59e0b' : '#3b82f6'}
+        emissive={hovered ? '#f59e0b' : '#000000'}
+        emissiveIntensity={hovered ? 0.3 : 0}
+      />
+    </mesh>
+  );
+};
+
+// Generate hotspot positions based on mesh geometry
+const generateMetadataHotspots = useCallback((mesh) => {
+  if (!mesh) return [];
+
+  const hotspots = [];
+  const box = new THREE.Box3().setFromObject(mesh);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+
+  // Rim hotspot
+  hotspots.push({
+    position: new THREE.Vector3(center.x, center.y + size.y / 2, center.z),
+    type: 'rim',
+    data: archaeologicalMetadata.vesselForm,
+    label: 'Rim Analysis'
+  });
+
+  // Base hotspot
+  hotspots.push({
+    position: new THREE.Vector3(center.x, center.y - size.y / 2, center.z),
+    type: 'base',
+    data: archaeologicalMetadata.vesselForm,
+    label: 'Base Analysis'
+  });
+
+  // Body hotspot (for fabric analysis)
+  hotspots.push({
+    position: new THREE.Vector3(center.x, center.y, center.z + size.x / 2),
+    type: 'fabric',
+    data: archaeologicalMetadata.fabric,
+    label: 'Fabric Analysis'
+  });
+
+  return hotspots;
+}, [archaeologicalMetadata]);
 
 function PotteryMesh({ mesh }) {
   const meshRef = useRef();
@@ -198,6 +264,20 @@ function Scene({ mesh, showPointCloud, pointCloud }) {
 
       <PotteryMesh mesh={mesh} />
 
+      {/* Interactive Metadata Hotspots */}
+      {showHotspots && mesh && generateMetadataHotspots(mesh).map((hotspot, index) => (
+        <MetadataHotspot
+          key={index}
+          position={hotspot.position}
+          data={hotspot.data}
+          onHover={setHotspotData}
+          onClick={() => {
+            setActiveMetadataTab(hotspot.type);
+            setShowMetadataPanel(true);
+          }}
+        />
+      ))}
+
       <OrbitControls
         enablePan={true}
         enableZoom={true}
@@ -233,6 +313,8 @@ export default function ReconstructionViewer({
   // Archaeological metadata state
   const [showMetadataPanel, setShowMetadataPanel] = useState(false);
   const [activeMetadataTab, setActiveMetadataTab] = useState('context');
+  const [hotspotData, setHotspotData] = useState(null);
+  const [showHotspots, setShowHotspots] = useState(true);
   const [archaeologicalMetadata, setArchaeologicalMetadata] = useState({
     // Context/Findspot
     context: {
@@ -325,6 +407,38 @@ export default function ReconstructionViewer({
       uncertainty: "Handle attachment method"
     }
   });
+
+  // Auto-compute dimensions from mesh geometry
+  const computeDimensions = useCallback((mesh) => {
+    if (!mesh || !mesh.geometry) return null;
+
+    const box = new THREE.Box3().setFromObject(mesh);
+    const size = box.getSize(new THREE.Vector3());
+
+    return {
+      rimDiameter: Math.max(size.x, size.z).toFixed(1) + 'cm',
+      baseDiameter: Math.min(size.x, size.z).toFixed(1) + 'cm',
+      height: size.y.toFixed(1) + 'cm',
+      estimatedCapacity: ((Math.PI * Math.pow(Math.max(size.x, size.z) / 2, 2) * size.y / 1000).toFixed(1) + ' liters')
+    };
+  }, []);
+
+  // Update metadata with computed values when mesh changes
+  useEffect(() => {
+    if (mesh) {
+      const computed = computeDimensions(mesh);
+      if (computed) {
+        setArchaeologicalMetadata(prev => ({
+          ...prev,
+          vesselForm: {
+            ...prev.vesselForm,
+            ...computed
+          }
+        }));
+      }
+    }
+  }, [mesh, computeDimensions]);
+
 
   // Analysis modules
   const axisDetector = useRef(new PotteryAxisDetector());
@@ -726,11 +840,10 @@ export default function ReconstructionViewer({
               {thicknessProfile.quality.overall > 0.7 && (
                 <div className="text-xs text-green-600">✓ Reliable</div>
               )}
-          </div>
-            
-          )};
+            </div>
+          )}
 
-        {/* Export Controls */}
+          {/* Export Controls */}
           <div className="border-t border-border pt-3 space-y-2">
             <button
               onClick={exportProfileDrawing}
@@ -821,6 +934,18 @@ export default function ReconstructionViewer({
         >
           <HeritageIcon />
           <span className="ml-2">Archaeological Data</span>
+        </button>
+
+        {/* Hotspot Toggle */}
+        <button
+          onClick={() => setShowHotspots(!showHotspots)}
+          className="bg-blue-600/90 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-600 transition-colors mb-2 ml-2"
+        >
+          <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3a4 4 0 00-4 4v6a2 2 0 012 2h6a2 2 0 012 2v10a2 2 0 01-2-2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 003 0v6a2 2 0 01-2 2h-6a2 2 0 00-2-2z" />
+          </svg>
+          <span className="ml-2">3D Hotspots</span>
         </button>
 
         {showMetadataPanel && (
@@ -1084,16 +1209,6 @@ export default function ReconstructionViewer({
         )}
       </div>
 
-      {/* Show Analysis Toggle */}
-      {!showAnalysis && axisDetection && (
-        <button
-          onClick={() => setShowAnalysis(true)}
-          className="absolute top-2.5 right-2.5 bg-surface/95 text-ink px-3 py-1.5 rounded-lg text-xs font-medium z-20 hover:bg-surface transition-colors"
-        >
-          Show Analysis
-        </button>
-      )}
-
       {/* Axis Visualization */}
       {axisDetection && axisDetection.confidence > 0.7 && (
         <div className="absolute bottom-2.5 right-2.5 bg-green-600/90 text-white px-3 py-2 rounded-lg text-xs font-medium z-20">
@@ -1107,6 +1222,21 @@ export default function ReconstructionViewer({
           <div>Vertices: {stats.vertices.toLocaleString()}</div>
           <div>Faces: {stats.faces.toLocaleString()}</div>
           <div>Type: {stats.type}</div>
+        </div>
+      )}
+
+      {/* Hotspot Data Display */}
+      {hotspotData && (
+        <div className="absolute bottom-20 left-2.5 bg-black/90 text-white p-3 rounded-lg text-xs z-20 max-w-xs">
+          <div className="font-semibold mb-2">{hotspotData.label}</div>
+          <div className="space-y-1">
+            {Object.entries(hotspotData.data).map(([key, value]) => (
+              <div key={key} className="flex justify-between">
+                <span className="text-zinc-400 capitalize">{key}:</span>
+                <span className="text-white">{value}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
