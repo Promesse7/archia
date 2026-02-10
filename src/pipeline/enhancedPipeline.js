@@ -117,7 +117,7 @@ export class EnhancedPotteryPipeline {
         minDistance: 0.5,
         maxDistance: 3.0
       });
-      
+
       const reconstructedMesh = poissonReconstructor.reconstructPointCloud(
         pointCloudData.points,
         vesselParams,
@@ -316,38 +316,38 @@ export class EnhancedPotteryPipeline {
   generateGuidedLathePoints(params, pointCloud) {
     const points = [];
     const steps = 100;
-    
+
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-      let radius = params.baseWidth + 
-                   (params.maxDiameter - params.baseWidth) * Math.sin(t * Math.PI) +
-                   params.rimRadius * (t > 0.8 ? (t - 0.8) * 5 : 0);
-      
+      let radius = params.baseWidth +
+        (params.maxDiameter - params.baseWidth) * Math.sin(t * Math.PI) +
+        params.rimRadius * (t > 0.8 ? (t - 0.8) * 5 : 0);
+
       // Blend with real point cloud average radius at this height
       const realRadius = this.averageRadiusAtHeight(pointCloud, t * params.height);
       radius = 0.6 * radius + 0.4 * realRadius;
-      
+
       points.push({ x: radius, y: t * params.height });
     }
-    
+
     console.log('Generated Guided Lathe Points:', {
       totalPoints: points.length,
       maxHeight: params.height,
       maxRadius: Math.max(...points.map(p => p.x))
     });
-    
+
     return points;
   }
 
   averageRadiusAtHeight(pointCloud, targetHeight) {
     if (!pointCloud || pointCloud.length === 0) return 5.0;
-    
-    const nearbyPoints = pointCloud.filter(point => 
+
+    const nearbyPoints = pointCloud.filter(point =>
       Math.abs(point.z - targetHeight) < 2.0
     );
-    
+
     if (nearbyPoints.length === 0) return 5.0;
-    
+
     const radii = nearbyPoints.map(point => Math.sqrt(point.x * point.x + point.y * point.y));
     return radii.reduce((sum, r) => sum + r, 0) / radii.length;
   }

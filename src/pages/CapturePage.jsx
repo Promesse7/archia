@@ -23,7 +23,7 @@ export default function CapturePage() {
       setCameraReady(true);
       setCameraStatus('ready');
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -79,13 +79,17 @@ export default function CapturePage() {
     }
   };
 
-  const handleAddToSession = () => {
+  const handleAddToSession = async () => {
     if (capturedFragment) {
-      addFragment(capturedFragment); // Use central fragment management
+      const fragmentCount = await addFragment(capturedFragment); // Wait for fragment to be added
+      console.log('Fragment added successfully, total fragments:', fragmentCount);
       setCapturedFragment(null);
       setCameraStatus('ready');
-      // Navigate to reconstruct screen
-      navigate('reconstruct');
+
+      // Small delay to ensure React state update cycle completes
+      setTimeout(() => {
+        navigate('reconstruct');
+      }, 50);
     }
   };
 
@@ -125,14 +129,14 @@ export default function CapturePage() {
               {/* Camera Feed */}
               <div className="relative aspect-[4/3] sm:aspect-video bg-charcoal-950 rounded-xl border-2 border-charcoal-700/50 overflow-hidden shadow-inner">
                 {!capturedFragment ? (
-                  <LazyCameraCapture 
-                    onResult={handleCaptureResult} 
+                  <LazyCameraCapture
+                    onResult={handleCaptureResult}
                     modelsReady={cameraReady}
                   />
                 ) : (
                   <div className="w-full h-full">
-                    <img 
-                      src={capturedFragment.image} 
+                    <img
+                      src={capturedFragment.image}
                       alt="Captured fragment"
                       className="w-full h-full object-cover rounded-xl"
                     />
@@ -142,7 +146,7 @@ export default function CapturePage() {
 
               {/* Status Indicator */}
               <div className="flex justify-center pt-2">
-                <StatusPill 
+                <StatusPill
                   status={cameraStatus}
                   message={getStatusMessage()}
                   className="text-base px-4 py-2"
@@ -157,17 +161,17 @@ export default function CapturePage() {
                   </>
                 ) : (
                   <>
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       size="lg"
                       onClick={handleAddToSession}
                       className="px-10 py-3 text-base sm:text-lg"
                     >
                       Add to Session
                     </Button>
-                    
-                    <Button 
-                      variant="secondary" 
+
+                    <Button
+                      variant="secondary"
                       size="lg"
                       onClick={handleRetake}
                       className="px-10 py-3 text-base sm:text-lg"
@@ -213,21 +217,21 @@ export default function CapturePage() {
                     {capturedFragment.classification?.fragmentType || "unknown"}
                   </div>
                 </div>
-                
+
                 <div>
                   <span className="text-charcoal-500">Confidence:</span>
                   <div className="font-medium text-white mt-1">
                     {((capturedFragment.classification?.confidence || 0) * 100).toFixed(1)}%
                   </div>
                 </div>
-                
+
                 <div>
                   <span className="text-charcoal-500">Points:</span>
                   <div className="font-medium text-white mt-1">
                     {capturedFragment.pointCloud?.length || 0}
                   </div>
                 </div>
-                
+
                 <div>
                   <span className="text-charcoal-500">Processing:</span>
                   <div className="font-medium text-white mt-1">

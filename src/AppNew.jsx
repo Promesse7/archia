@@ -99,7 +99,7 @@ const AppContent = () => {
       splash: <SplashPage />,
       home: <HomePage fragmentCount={fragments.length} />,
       capture: <CapturePage />,
-      reconstruct: <ReconstructionPage />,
+      reconstruct: <ReconstructionPage fragments={fragments} />,
       gallery: <GalleryPage />,
       puzzle: <PuzzlePage />,
       about: <AboutPage />

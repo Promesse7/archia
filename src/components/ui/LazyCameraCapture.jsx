@@ -2,9 +2,9 @@ import React, { Suspense, lazy } from 'react';
 import { cn } from '../../utils/cn';
 
 // Lazy load the heavy camera component
-const HeavyCameraCapture = lazy(() => 
-  import('../features/camera/CameraCapture').then(module => ({
-    default: module.CameraCapture
+const HeavyCameraCapture = lazy(() =>
+  import('../CameraCapture').then(module => ({
+    default: module.default
   }))
 );
 
@@ -17,9 +17,9 @@ const HeavyCameraCapture = lazy(() =>
  */
 
 export const LazyCameraCapture = React.forwardRef((props, ref) => {
-  const { 
-    onResult, 
-    modelsReady, 
+  const {
+    onResult,
+    modelsReady,
     className,
     fallback = (
       <div className={cn(

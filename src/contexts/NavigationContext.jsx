@@ -10,25 +10,37 @@ export const NavigationProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [fragments, setFragments] = useState([]); // Central fragments state
 
-  // Navigation guards
-  const navigationGuards = useMemo(() => ({
-    'reconstruct': () => ({
-      canNavigate: fragments.length > 0,
-      reason: fragments.length === 0 ? 'Please capture at least one fragment first' : null
-    }),
-    'gallery': () => ({
-      canNavigate: true
-    })
-    // Add more guards as needed
-  }), [fragments]);
+  // Navigation guards - check state directly instead of using useMemo
+  const checkNavigationGuard = useCallback((pageId) => {
+    if (pageId === 'reconstruct') {
+      console.log('Navigation guard: Checking fragments count:', fragments.length);
+      return {
+        canNavigate: fragments.length > 0,
+        reason: fragments.length === 0 ? 'Please capture at least one fragment first' : null
+      };
+    }
+    if (pageId === 'gallery') {
+      return { canNavigate: true };
+    }
+    return { canNavigate: true };
+  }, [fragments]);
 
   // Fragment management functions
   const addFragment = useCallback((fragment) => {
-    setFragments(prev => [...prev, fragment]);
+    console.log('NavigationContext: Adding fragment:', fragment);
+    return new Promise((resolve) => {
+      setFragments(prev => {
+        console.log('NavigationContext: Current fragments before:', prev.length);
+        const newFragments = [...prev, fragment];
+        console.log('NavigationContext: Current fragments after:', newFragments.length);
+        resolve(newFragments.length);
+        return newFragments;
+      });
+    });
   }, []);
 
   const removeFragment = useCallback((fragmentId) => {
-    setFragments(prev => prev.filter(f => f.id !== fragmentId));
+    setFragments(prev => prev.filter(f => (f.timestamp || f.id) !== fragmentId));
   }, []);
 
   const clearFragments = useCallback(() => {
@@ -36,8 +48,8 @@ export const NavigationProvider = ({ children }) => {
   }, []);
 
   const updateFragment = useCallback((fragmentId, updates) => {
-    setFragments(prev => prev.map(f => 
-      f.id === fragmentId ? { ...f, ...updates } : f
+    setFragments(prev => prev.map(f =>
+      (f.timestamp || f.id) === fragmentId ? { ...f, ...updates } : f
     ));
   }, []);
 
@@ -50,19 +62,16 @@ export const NavigationProvider = ({ children }) => {
       setError(null);
 
       // Check navigation guards
-      const guard = navigationGuards[pageId];
-      if (guard) {
-        const result = await guard();
-        if (result && !result.canNavigate) {
-          setError(result.reason || 'Navigation blocked');
-          return;
-        }
+      const guard = checkNavigationGuard(pageId);
+      if (guard && !guard.canNavigate) {
+        setError(new Error(guard.reason || 'Navigation blocked'));
+        return;
       }
 
       // Add to history if it's a new page
       setNavigationHistory(prev => {
         if (prev[prev.length - 1] === pageId) return prev;
-        return options.replace 
+        return options.replace
           ? [...prev.slice(0, -1), pageId]  // Replace last entry
           : [...prev, pageId];              // Add new entry
       });
@@ -70,7 +79,7 @@ export const NavigationProvider = ({ children }) => {
       // Update URL
       const url = `#${pageId}`;
       const state = { pageId, timestamp: Date.now() };
-      
+
       if (options.replace) {
         window.history.replaceState(state, '', url);
       } else {
@@ -80,7 +89,7 @@ export const NavigationProvider = ({ children }) => {
       // Smooth transition
       await new Promise(resolve => setTimeout(resolve, 150));
       setCurrentPage(pageId);
-      
+
       // Scroll to top on navigation
       window.scrollTo(0, 0);
     } catch (err) {
@@ -89,15 +98,15 @@ export const NavigationProvider = ({ children }) => {
     } finally {
       setIsNavigating(false);
     }
-  }, [currentPage, isNavigating, navigationGuards]);
+  }, [currentPage, isNavigating, checkNavigationGuard]);
 
   const goBack = useCallback(() => {
     if (navigationHistory.length <= 1) return;
-    
+
     const newHistory = [...navigationHistory];
     newHistory.pop();
     const previousPage = newHistory[newHistory.length - 1];
-    
+
     navigate(previousPage, { replace: true });
   }, [navigationHistory, navigate]);
 
@@ -107,13 +116,13 @@ export const NavigationProvider = ({ children }) => {
       const hash = window.location.hash.substring(1) || 'home';
       if (hash !== currentPage) {
         const historyIndex = navigationHistory.indexOf(hash);
-        
+
         if (historyIndex !== -1) {
           setNavigationHistory(prev => prev.slice(0, historyIndex + 1));
         } else {
           setNavigationHistory(prev => [...prev, hash]);
         }
-        
+
         setCurrentPage(hash);
       }
     };
@@ -143,28 +152,28 @@ export const NavigationProvider = ({ children }) => {
       React.cloneElement(children, { key: 'navigation-children' }),
       isNavigating && React.createElement(
         'div',
-        { 
+        {
           key: 'navigation-loading',
-          className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' 
+          className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
         },
         React.createElement(
           'div',
-          { 
-            className: 'animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500' 
+          {
+            className: 'animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500'
           }
         )
       ),
       error && React.createElement(
         'div',
-        { 
+        {
           key: 'navigation-error',
-          className: 'fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50' 
+          className: 'fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg z-50'
         },
         [
-          `Navigation error: ${error.message}`,
+          `Navigation error: ${error?.message || error || 'Unknown navigation error'}`,
           React.createElement(
             'button',
-            { 
+            {
               key: 'dismiss-button',
               onClick: () => setError(null),
               className: 'ml-4 text-sm underline'

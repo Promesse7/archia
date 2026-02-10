@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigation } from '../contexts/NavigationContext';
-import { useFragmentContext } from '../contexts/FragmentContext';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, SectionHeader } from '../components/ui';
 
 // Icon components
@@ -35,24 +34,23 @@ export default function GalleryPage() {
   const [focusedFragment, setFocusedFragment] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const [lastAction, setLastAction] = useState(null);
-  const { navigate, fragments } = useNavigation(); // Get fragments from NavigationContext
-  const { setSelectedFragments: setGlobalSelectedFragments } = useFragmentContext();
+  const { navigate, fragments } = useNavigation(); // Use NavigationContext for fragment management
   const hasFragments = fragments && fragments.length > 0;
 
   // Handle viewing a single fragment in 3D
   const handleViewFragment = useCallback((fragment) => {
-    setGlobalSelectedFragments([fragment]);
+    setSelectedFragments(new Set([fragment]));
     navigate('reconstruct');
-  }, [navigate, setGlobalSelectedFragments]);
+  }, [navigate, setSelectedFragments]);
 
   // Handle viewing all selected fragments in 3D
   const handleViewSelected = useCallback(() => {
-    const selected = fragments.filter(f => 
+    const selected = fragments.filter(f =>
       selectedFragments.has(f.timestamp || f.id)
     );
-    setGlobalSelectedFragments(selected);
+    setSelectedFragments(new Set(selected));
     navigate('reconstruct');
-  }, [fragments, selectedFragments, navigate, setGlobalSelectedFragments]);
+  }, [fragments, selectedFragments, navigate, setSelectedFragments]);
 
   // Selection management with proper state tracking
   const handleFragmentClick = useCallback((fragmentId, event) => {
@@ -60,7 +58,7 @@ export default function GalleryPage() {
     setSelectedFragments(prev => {
       const newSet = new Set(prev);
       const wasSelected = newSet.has(fragmentId);
-      
+
       if (wasSelected) {
         newSet.delete(fragmentId);
         setLastAction('deselected');
@@ -68,7 +66,7 @@ export default function GalleryPage() {
         newSet.add(fragmentId);
         setLastAction('selected');
       }
-      
+
       return newSet;
     });
   }, []);
@@ -116,31 +114,31 @@ export default function GalleryPage() {
         event.preventDefault();
         handleSelectAll();
       }
-      
+
       // Escape: Clear selection
       if (event.key === 'Escape') {
         handleClearSelection();
       }
-      
+
       // Enter: Reconstruct selected if any are selected
       if (event.key === 'Enter' && selectedFragments.size > 0) {
         event.preventDefault();
         handleReconstructSelected();
       }
-      
+
       // Arrow keys: Navigate between fragments
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || 
-          event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp' ||
+        event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         if (focusedFragment !== null) {
           event.preventDefault();
-          const currentIndex = fragments.findIndex(f => 
+          const currentIndex = fragments.findIndex(f =>
             (f.timestamp || f.id) === focusedFragment
           );
-          
+
           let newIndex = currentIndex;
-          const cols = viewMode === 'grid' ? 
+          const cols = viewMode === 'grid' ?
             (window.innerWidth >= 1280 ? 4 : window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1) : 1;
-          
+
           switch (event.key) {
             case 'ArrowDown':
               newIndex = Math.min(currentIndex + cols, fragments.length - 1);
@@ -155,7 +153,7 @@ export default function GalleryPage() {
               newIndex = Math.max(currentIndex - 1, 0);
               break;
           }
-          
+
           if (newIndex !== currentIndex) {
             const newFragmentId = fragments[newIndex]?.timestamp || fragments[newIndex]?.id;
             if (newFragmentId) {
@@ -176,7 +174,7 @@ export default function GalleryPage() {
   const getFragmentVariant = (type) => {
     const variants = {
       rim: "success",
-      body: "info", 
+      body: "info",
       base: "warning",
       unknown: "neutral"
     };
@@ -191,28 +189,28 @@ export default function GalleryPage() {
 
   const getSelectionStats = useCallback(() => {
     const selected = Array.from(selectedFragments);
-    const selectedFragmentData = fragments.filter(f => 
+    const selectedFragmentData = fragments.filter(f =>
       selected.includes(f.timestamp || f.id)
     );
-    
+
     const stats = {
       total: selected.length,
       byType: {},
       avgConfidence: 0,
       totalPoints: 0
     };
-    
+
     selectedFragmentData.forEach(fragment => {
       const type = fragment.classification?.fragmentType || 'unknown';
       stats.byType[type] = (stats.byType[type] || 0) + 1;
       stats.avgConfidence += fragment.classification?.confidence || 0;
       stats.totalPoints += fragment.pointCloud?.length || 0;
     });
-    
+
     if (selected.length > 0) {
       stats.avgConfidence = (stats.avgConfidence / selected.length) * 100;
     }
-    
+
     return stats;
   }, [selectedFragments, fragments]);
 
@@ -235,9 +233,8 @@ export default function GalleryPage() {
               <div className="flex bg-charcoal-800 rounded-lg p-1">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-charcoal-400 hover:text-white'
-                  }`}
+                  className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'text-charcoal-400 hover:text-white'
+                    }`}
                   aria-label="Grid view"
                   title="Grid view"
                 >
@@ -245,9 +242,8 @@ export default function GalleryPage() {
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-charcoal-400 hover:text-white'
-                  }`}
+                  className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'text-charcoal-400 hover:text-white'
+                    }`}
                   aria-label="List view"
                   title="List view"
                 >
@@ -328,15 +324,15 @@ export default function GalleryPage() {
               const isSelected = selectedFragments.has(fragmentId);
               const isHovered = hoveredFragment === fragmentId;
               const isFocused = focusedFragment === fragmentId;
-              
+
               return (
                 <Card
                   key={fragmentId}
                   data-fragment-id={fragmentId}
                   className={`
                     cursor-pointer transition-all duration-300 transform outline-none
-                    ${isSelected 
-                      ? 'ring-2 ring-amber-500/50 border-amber-500/50 scale-105' 
+                    ${isSelected
+                      ? 'ring-2 ring-amber-500/50 border-amber-500/50 scale-105'
                       : 'border-charcoal-700/50 hover:border-amber-500/30 hover:scale-[1.02] hover:-translate-y-1'
                     }
                     ${isHovered && !isSelected ? 'scale-[1.03] -translate-y-2' : ''}
@@ -369,14 +365,14 @@ export default function GalleryPage() {
                             alt={`Fragment ${index + 1} - ${fragment.classification?.fragmentType || 'Unknown type'}`}
                             className="w-full h-full object-cover"
                           />
-                          
+
                           {/* Selection Indicator */}
                           {isSelected && (
                             <div className="absolute top-2 right-2 bg-amber-500 rounded-full p-1" aria-hidden="true">
                               <CheckIcon />
                             </div>
                           )}
-                          
+
                           {/* Hover Overlay */}
                           {isHovered && (
                             <div className="absolute inset-0 bg-amber-500/10 backdrop-blur-sm flex items-center justify-center" aria-hidden="true">
@@ -386,23 +382,23 @@ export default function GalleryPage() {
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Fragment Info */}
                         <div className="p-4 space-y-3">
                           {/* Classification Badge */}
                           <div className="flex items-center justify-between">
-                            <Badge 
+                            <Badge
                               variant={getFragmentVariant(fragment.classification?.fragmentType)}
                               size="sm"
                             >
                               {fragment.classification?.fragmentType || "Unknown"}
                             </Badge>
-                            
+
                             <div className="text-xs text-charcoal-500">
                               {((fragment.classification?.confidence || 0) * 100).toFixed(1)}%
                             </div>
                           </div>
-                          
+
                           {/* Additional Info */}
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
@@ -411,14 +407,14 @@ export default function GalleryPage() {
                                 {fragment.pointCloud?.length || 0}
                               </span>
                             </div>
-                            
+
                             <div className="flex justify-between">
                               <span className="text-charcoal-500">Captured:</span>
                               <span className="text-white font-medium text-xs">
                                 {formatDate(fragment.timestamp)}
                               </span>
                             </div>
-                            
+
                             {fragment.processingTime && (
                               <div className="flex justify-between">
                                 <span className="text-charcoal-500">Processing:</span>
@@ -428,7 +424,7 @@ export default function GalleryPage() {
                               </div>
                             )}
                           </div>
-                          
+
                           {/* Quick Actions */}
                           <div className="flex gap-2 pt-2 border-t border-charcoal-800">
                             <Button
@@ -443,7 +439,7 @@ export default function GalleryPage() {
                             >
                               {isSelected ? 'Selected' : 'Select'}
                             </Button>
-                            
+
                             <Button
                               variant="secondary"
                               size="sm"
@@ -475,11 +471,11 @@ export default function GalleryPage() {
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-2">
-                            <Badge 
+                            <Badge
                               variant={getFragmentVariant(fragment.classification?.fragmentType)}
                               size="sm"
                             >
@@ -489,7 +485,7 @@ export default function GalleryPage() {
                               {((fragment.classification?.confidence || 0) * 100).toFixed(1)}%
                             </div>
                           </div>
-                          
+
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                             <div>
                               <span className="text-charcoal-500">Points:</span>
@@ -513,7 +509,7 @@ export default function GalleryPage() {
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Actions */}
                         <div className="flex flex-col gap-2">
                           <Button
@@ -568,7 +564,7 @@ export default function GalleryPage() {
                     })()}
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2">
                   <Button
                     onClick={handleClearSelection}

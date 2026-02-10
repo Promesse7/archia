@@ -67,6 +67,10 @@ export default function EnhancedReconstructionViewer({
   const meshRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseRef = useRef(new THREE.Vector2());
+
+  // View state management
+  const [localShowPointCloud, setLocalShowPointCloud] = useState(showPointCloud);
+  const [localShowMesh, setLocalShowMesh] = useState(showMesh);
   const animationIdRef = useRef(null);
 
   // Feature states
@@ -294,6 +298,9 @@ export default function EnhancedReconstructionViewer({
         sceneRef.current.add(meshClone);
         meshRef.current = meshClone;
 
+        // Set visibility based on local state
+        meshClone.visible = localShowMesh;
+
         // Calculate stats
         const geo = meshClone.geometry;
         setStats(prev => ({
@@ -328,7 +335,25 @@ export default function EnhancedReconstructionViewer({
         setIsLoading(false);
       }
     };
-  }, [mesh, showMesh]);
+  }, [mesh, localShowMesh]);
+
+  // Update mesh visibility when local state changes
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.visible = localShowMesh;
+    }
+  }, [localShowMesh]);
+
+  // Update point cloud visibility when local state changes
+  useEffect(() => {
+    if (pointsRef.current && pointsRef.current.length > 0) {
+      pointsRef.current.forEach(point => {
+        if (point.visible !== undefined) {
+          point.visible = localShowPointCloud;
+        }
+      });
+    }
+  }, [localShowPointCloud]);
 
   // Annotation placement
   const handleAnnotationPlacement = useCallback(() => {
@@ -537,6 +562,26 @@ export default function EnhancedReconstructionViewer({
               title="Angle Measurement"
             >
               <AngleIcon />
+            </button>
+          </div>
+
+          {/* View toggle tools */}
+          <div className="flex space-x-1">
+            <button
+              onClick={() => setLocalShowMesh(!localShowMesh)}
+              className={`p-2 rounded transition-colors ${localShowMesh ? 'bg-green-600 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
+                }`}
+              title="Toggle 3D Mesh View"
+            >
+              <LayersIcon />
+            </button>
+            <button
+              onClick={() => setLocalShowPointCloud(!localShowPointCloud)}
+              className={`p-2 rounded transition-colors ${localShowPointCloud ? 'bg-blue-600 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
+                }`}
+              title="Toggle Point Cloud View"
+            >
+              <SelectIcon />
             </button>
           </div>
 

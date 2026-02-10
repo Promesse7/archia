@@ -39,13 +39,39 @@ export default function CameraCapture({ onResult, modelsReady }) {
     setStatus("Requesting camera...");
 
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+      // Try different camera configurations
+      let mediaStream;
+
+      // First try: Environment camera (back camera on mobile)
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+      } catch (envErr) {
+        console.log("Environment camera failed, trying user camera:", envErr);
+
+        // Second try: User camera (front camera on mobile)
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "user",
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+        } catch (userErr) {
+          console.log("User camera failed, trying basic constraints:", userErr);
+
+          // Third try: Basic constraints
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: true
+          });
         }
-      });
+      }
 
       videoRef.current.srcObject = mediaStream;
       setStream(mediaStream);
@@ -72,9 +98,12 @@ export default function CameraCapture({ onResult, modelsReady }) {
       await videoRef.current.play();
       setStatus("Camera active");
     } catch (err) {
+      console.error("Camera initialization failed:", err);
       let msg = err.message;
-      if (err.name === "NotAllowedError") msg = "Camera permission denied";
-      if (err.name === "NotFoundError") msg = "No camera available";
+      if (err.name === "NotAllowedError") msg = "Camera permission denied - please allow camera access";
+      if (err.name === "NotFoundError") msg = "No camera available - please connect a camera";
+      if (err.name === "NotReadableError") msg = "Camera is already in use by another application";
+      if (err.name === "OverconstrainedError") msg = "Camera constraints not supported";
       setError(msg);
       setStatus("Camera error");
     }
@@ -193,12 +222,12 @@ export default function CameraCapture({ onResult, modelsReady }) {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap gap-3 justify-center">
+      <div className="flex flex-wrap gap-3 max-h-[60vh] justify-center">
         {!stream ? (
           <Button
             onClick={startCamera}
             disabled={!modelsReady || processing}
-            className="min-w-[160px]"
+            className="min-w-[160px] max-h-[80px]"
           >
             Start Camera
           </Button>
@@ -208,7 +237,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
               onClick={captureFromCamera}
               disabled={processing || isMobile}
               variant="secondary"
-              className="min-w-[160px]"
+                className="min-w-[160px] max-h-[50px]"
             >
               {processing ? "Processing…" : "Capture"}
             </Button>
@@ -216,7 +245,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
             <Button
               onClick={stopCamera}
               variant="destructive"
-              className="min-w-[140px]"
+                className="min-w-[140px] max-h-[50px]"
             >
               Stop
             </Button>
@@ -240,10 +269,7 @@ export default function CameraCapture({ onResult, modelsReady }) {
         />
       </div>
 
-      {/* Status line */}
-      <div className="text-center text-sm text-zinc-500 py-2 px-3 bg-zinc-100 rounded-lg">
-        <StatusPill status={status} />
-      </div>
+
 
       {/* Floating capture button on mobile when camera is live */}
       {isMobile && stream && !processing && (
