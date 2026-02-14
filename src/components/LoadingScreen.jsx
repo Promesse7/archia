@@ -57,22 +57,53 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     mountRef.current.appendChild(renderer.domElement);
 
-    // Artifact geometry with warm amber
-    const geometry = new THREE.ConeGeometry(3, 5, 24);
-    const material = new THREE.MeshPhongMaterial({ 
-      color: 0xd97706,
-      wireframe: true,
+    // Pottery profile points (amphora-like silhouette)
+    const points = [];
+
+    // Profile curve (X = radius, Y = height)
+    points.push(new THREE.Vector2(0.0, -3.5));  // base tip
+    points.push(new THREE.Vector2(1.2, -3.2));
+    points.push(new THREE.Vector2(2.2, -2.5));
+    points.push(new THREE.Vector2(2.8, -1.5));
+    points.push(new THREE.Vector2(3.0, 0.0));   // widest body
+    points.push(new THREE.Vector2(2.4, 1.5));
+    points.push(new THREE.Vector2(1.4, 2.5));
+    points.push(new THREE.Vector2(1.0, 3.2));
+    points.push(new THREE.Vector2(1.2, 3.6));   // rim
+
+    const geometry = new THREE.LatheGeometry(points, 64);
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xc66a2b,              // warm clay tone
+      metalness: 0.15,
+      roughness: 0.75,
       emissive: 0xd97706,
-      emissiveIntensity: 0.3,
+      emissiveIntensity: 0.15,
       transparent: true,
-      opacity: 0.85
+      opacity: 0.95
     });
+
     const artifact = new THREE.Mesh(geometry, material);
+    artifact.castShadow = true;
+    artifact.receiveShadow = true;
     scene.add(artifact);
+
+    // Subtle wireframe overlay for AI-analysis feel
+    const wireframe = new THREE.Mesh(
+      geometry,
+      new THREE.MeshBasicMaterial({
+        color: 0xfbbf24,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.08
+      })
+    );
+
+    artifact.add(wireframe);
 
     // Orbit ring with cool cyan
     const ringGeometry = new THREE.TorusGeometry(4.5, 0.015, 16, 64);
-    const ringMaterial = new THREE.MeshBasicMaterial({ 
+    const ringMaterial = new THREE.MeshBasicMaterial({
       color: 0x06b6d4,
       transparent: true,
       opacity: 0.4
@@ -94,7 +125,7 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
     scene.add(lightBand);
 
     // Lighting
-    const rimLight = new THREE.SpotLight(0xf59e0b, 2.5, 50, Math.PI / 6);
+    const rimLight = new THREE.SpotLight(0xf59e0b, 1.8, 50, Math.PI / 6);
     rimLight.position.set(8, 8, 8);
     rimLight.target = artifact;
     scene.add(rimLight);
@@ -107,37 +138,67 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
     fillLight.position.set(0, -6, 4);
     scene.add(fillLight);
 
-    const ambientLight = new THREE.AmbientLight(0x2d2d2d, 0.4);
+    const ambientLight = new THREE.AmbientLight(0x2d2d2d, 0.6);
     scene.add(ambientLight);
 
     let animationId;
     const animate = () => {
       animationId = requestAnimationFrame(animate);
       const time = Date.now();
-      
+
       artifact.rotation.y += 0.004;
       artifact.rotation.x = Math.sin(time * 0.0004) * 0.08;
-      
+
       orbitRing.rotation.z += 0.002;
       orbitRing.position.y = Math.sin(time * 0.0008) * 0.3;
-      
+
       lightBand.position.x = -6 + Math.sin(time * 0.0005) * 4;
-      
+
       renderer.render(scene, camera);
     };
     animate();
 
     return () => {
       if (animationId) cancelAnimationFrame(animationId);
+
+      // Properly dispose of all Three.js resources
       if (mountRef.current && renderer.domElement) {
         mountRef.current.removeChild(renderer.domElement);
       }
+
+      // Dispose geometries
       geometry.dispose();
-      material.dispose();
       ringGeometry.dispose();
-      ringMaterial.dispose();
       lightBandGeometry.dispose();
+
+      // Dispose materials
+      material.dispose();
+      ringMaterial.dispose();
       lightBandMaterial.dispose();
+      if (wireframe.material) {
+        wireframe.material.dispose();
+      }
+
+      // Dispose wireframe geometry
+      if (wireframe.geometry) {
+        wireframe.geometry.dispose();
+      }
+
+      // Remove all objects from scene
+      scene.remove(artifact);
+      scene.remove(orbitRing);
+      scene.remove(lightBand);
+      scene.remove(rimLight);
+      scene.remove(accentLight);
+      scene.remove(fillLight);
+      scene.remove(ambientLight);
+
+      // Dispose lights
+      rimLight.dispose();
+      accentLight.dispose();
+      fillLight.dispose();
+
+      // Dispose renderer
       renderer.dispose();
     };
   }, []);
@@ -157,7 +218,7 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
   const isLargeScreen = typeof window !== 'undefined' && window.innerWidth >= 1024;
 
   return (
-    <div 
+    <div
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(to bottom, #1a1a1a 0%, #0f0f0f 50%, #1a1a1a 100%)',
@@ -172,7 +233,7 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
         transform: isTransitioning ? 'scale(1.05)' : 'scale(1)'
       }}
     >
-      
+
       {/* Radial glow */}
       <div style={{
         position: 'absolute',
@@ -180,7 +241,7 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
         background: 'radial-gradient(circle at 50% 40%, rgba(217, 119, 6, 0.08), transparent 60%)',
         pointerEvents: 'none'
       }} />
-      
+
       {/* Grid */}
       <div style={{
         position: 'absolute',
@@ -209,17 +270,17 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
           border: '1px solid rgba(68, 64, 60, 0.3)',
           boxShadow: '0 20px 80px rgba(0, 0, 0, 0.5)'
         }}>
-          
+
           <div style={{
             display: 'grid',
             gridTemplateColumns: isLargeScreen ? '1fr 1fr' : '1fr',
             gap: '64px',
             alignItems: 'center'
           }}>
-            
+
             {/* Left Column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
-              
+
               {/* Header */}
               <div style={{
                 textAlign: isLargeScreen ? 'left' : 'center',
@@ -260,7 +321,7 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
                 justifyContent: isLargeScreen ? 'flex-start' : 'center'
               }}>
                 <div style={{ position: 'relative' }}>
-                  
+
                   <div style={{
                     position: 'relative',
                     background: 'linear-gradient(to bottom right, rgba(28, 25, 23, 0.6), rgba(0, 0, 0, 0.8))',
@@ -268,8 +329,8 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
                     padding: '24px',
                     border: '1px solid rgba(146, 64, 14, 0.2)'
                   }}>
-                    <div 
-                      ref={mountRef} 
+                    <div
+                      ref={mountRef}
                       style={{
                         width: '360px',
                         height: '360px',
@@ -278,7 +339,7 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
                         background: 'rgba(0, 0, 0, 0.4)'
                       }}
                     />
-                    
+
                     {/* Corner accents */}
                     {[
                       { top: '20px', left: '20px', borderTop: '1px solid rgba(217, 119, 6, 0.3)', borderLeft: '1px solid rgba(217, 119, 6, 0.3)' },
@@ -337,7 +398,7 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
 
             {/* Right Column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-              
+
               {/* Progress */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -375,7 +436,7 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
                     {displayProgress.toFixed(0)}<span style={{ fontSize: '36px', color: '#78716c' }}>%</span>
                   </div>
                 </div>
-                
+
                 {/* Progress bar */}
                 <div style={{
                   position: 'relative',
@@ -505,7 +566,8 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
       </div>
 
       {/* Animations */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes shimmer {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(200%); }

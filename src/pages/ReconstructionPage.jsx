@@ -1,24 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import EnhancedReconstructionViewer from '../components/EnhancedReconstructionViewer';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { Card, CardHeader, CardTitle, CardContent, Button, SectionHeader } from '../components/ui';
 import { getPotteryReconstructor } from '../reconstruction/potteryRebuilder';
 import { getFragmentClassifier } from '../ai/classifier';
 
 export default function ReconstructionPage({ onNavigate, fragments }) {
   const [reconstructedMesh, setReconstructedMesh] = useState(null);
+  const [isReconstructing, setIsReconstructing] = useState(false);
+  const hasReconstructedRef = useRef(false); // Track if we've already reconstructed for current fragments
 
   // Auto-reconstruct when fragments are available
   React.useEffect(() => {
-    if (hasFragments && fragments.length > 0) {
-      console.log("Auto-reconstructing with fragments:", fragments.length);
+    const hasFragments = fragments && fragments.length > 0;
+    const fragmentCount = fragments?.length || 0;
+
+    // Only reconstruct if we have fragments and haven't reconstructed for this count yet
+    if (hasFragments && !isReconstructing && hasReconstructedRef.current !== fragmentCount) {
+      console.log("Auto-reconstructing with fragments:", fragmentCount);
+      hasReconstructedRef.current = fragmentCount; // Mark as reconstructed for this count
       reconstructPottery(fragments);
     }
-  }, [fragments]);
+  }, [fragments]); // Only depend on fragments
 
-  const reconstructPottery = async (fragmentsList) => {
+  const reconstructPottery = React.useCallback(async (fragmentsList) => {
+    if (isReconstructing) return; // Prevent race conditions
+
     try {
+      setIsReconstructing(true);
       console.log("Starting reconstruction with fragments:", fragmentsList.length);
-      
+
       const reconstructor = getPotteryReconstructor();
       reconstructor.clear();
 
@@ -34,6 +45,8 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
         }
       });
 
+      console.log("All fragments added, starting reconstruction...");
+
       // Get CNN semantic guidance from the most recent fragment image
       let cnnParams = null;
       if (fragmentsList.length > 0) {
@@ -46,24 +59,28 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
         }
       }
 
+      console.log("Starting final reconstruction...");
       // Use semantic guidance if available, otherwise fall back to standard reconstruction
-      const mesh = cnnParams 
+      const mesh = cnnParams
         ? reconstructor.reconstructWithSemanticParams(cnnParams)
         : reconstructor.reconstruct();
-        
+
       console.log("Reconstruction complete, mesh:", mesh);
-      
+
       setReconstructedMesh(mesh);
 
       console.log("Reconstruction complete:", reconstructor.getStats());
     } catch (err) {
       console.error("Reconstruction error:", err);
+    } finally {
+      setIsReconstructing(false);
     }
-  };
+  }, []); // Empty dependency array since we're using ref pattern
 
   const clearSession = () => {
     setReconstructedMesh(null);
     getPotteryReconstructor().clear();
+    hasReconstructedRef.current = false; // Reset reconstruction tracking
   };
 
   const hasFragments = fragments && fragments.length > 0;
@@ -131,13 +148,20 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
             </CardHeader>
             <CardContent>
               <div className="h-[600px] rounded-lg bg-zinc-950">
-                <EnhancedReconstructionViewer
-                  mesh={reconstructedMesh}
-                  classification={fragments[fragments.length - 1]?.classification || null}
-                  showPointCloud={false}
-                  showMesh={true}
-                  autoRotate={true}
-                />
+                <ErrorBoundary
+                  errorMessage="Enhanced 3D viewer failed to load. Try refreshing the page."
+                  onError={(error, errorInfo) => {
+                    console.error('EnhancedReconstructionViewer error:', error, errorInfo);
+                  }}
+                >
+                  <EnhancedReconstructionViewer
+                    mesh={reconstructedMesh}
+                    classification={fragments[fragments.length - 1]?.classification || null}
+                    showPointCloud={false}
+                    showMesh={true}
+                    autoRotate={true}
+                  />
+                </ErrorBoundary>
               </div>
             </CardContent>
           </Card>
@@ -155,11 +179,11 @@ export default function ReconstructionPage({ onNavigate, fragments }) {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                 {fragments.map((fragment, index) => (
                   <div
-                    key={fragment.timestamp}
+                    key={fragment.timestamp || `fragment-${index}`}
                     className="border-2 border-zinc-700 rounded-lg overflow-hidden hover:border-amber-500 transition-colors"
                   >
                     <img
-                      src={fragment.image}
+                      src={fragment.image || ''}
                       alt={`Fragment ${index + 1}`}
                       className="w-full aspect-square object-cover"
                     />

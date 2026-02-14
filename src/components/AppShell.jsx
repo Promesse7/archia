@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import * as PropTypes from 'prop-types';
 import { useNavigation } from '../contexts/NavigationContext.jsx';
+import { BrandMark } from './ui/BrandMark';
 
 // Theme context for global theme management
 const ThemeContext = createContext();
@@ -11,13 +12,13 @@ export const useTheme = () => {
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return context;
-}; 
+};
 
 export const AppShell = ({ children }) => {
   // Global theme state
   const [theme, setTheme] = useState('dark');
   const { isNavigating } = useNavigation();
-  
+
   // Theme management
   const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
@@ -25,6 +26,9 @@ export const AppShell = ({ children }) => {
 
   // Apply theme to document
   useEffect(() => {
+    // SSR safety check
+    if (typeof document === 'undefined') return;
+
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
       document.body.classList.add('bg-zinc-950', 'text-white');
@@ -41,9 +45,25 @@ export const AppShell = ({ children }) => {
     isDark: theme === 'dark'
   }), [theme, toggleTheme]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Remove theme classes on unmount to prevent CSS conflicts
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('dark');
+        document.body.classList.remove('bg-zinc-950', 'text-white');
+      }
+    };
+  }, []);
+
   return (
     <ThemeContext.Provider value={themeContextValue}>
       <div className={`min-h-screen relative ${theme === 'dark' ? 'dark bg-zinc-900' : 'bg-gray-50'}`}>
+        {/* Persistent Brand Mark */}
+        <div className="fixed top-4 left-4 z-40">
+          <BrandMark variant="minimal" />
+        </div>
+
         {/* Global loading overlay */}
         {isNavigating && (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center transition-opacity duration-300">
@@ -53,7 +73,7 @@ export const AppShell = ({ children }) => {
             </div>
           </div>
         )}
-        
+
         {/* Main content */}
         <div className={`transition-opacity duration-300 ${isNavigating ? 'opacity-50' : 'opacity-100'}`}>
           {children}
