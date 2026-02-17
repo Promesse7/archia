@@ -8,7 +8,7 @@ import { getDepthEstimator } from './ai/depthEstimator';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext.jsx';
 import { FragmentProvider } from './contexts/FragmentContext';
 import * as PropTypes from "prop-types";
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/react";
 
 // Lazy load pages for performance
 const SplashPage = React.lazy(() => import('./pages/SplashPage'));
