@@ -1,27 +1,27 @@
 import React from 'react';
 import * as PropTypes from 'prop-types';
 import { useNavigation } from '../contexts/NavigationContext.jsx';
-import { Home, Camera, Box, BookOpen, Puzzle } from 'lucide-react';
+import { Home, Camera, Box, BookOpen, Puzzle, Landmark } from 'lucide-react';
 
 const navItems = [
   { id: 'home', icon: Home, label: 'Home' },
   { id: 'capture', icon: Camera, label: 'Capture' },
   { id: 'gallery', icon: Box, label: 'Gallery' },
   { id: 'reconstruct', icon: Box, label: 'Reconstruct' },
+  { id: 'archaeology', icon: Landmark, label: 'Archaeology' },
   { id: 'about', icon: BookOpen, label: 'About' },
 ];
 
 const NavButton = ({ item, isActive, onClick }) => {
   const Icon = item.icon;
-  
+
   return (
     <button
       onClick={onClick}
-      className={`p-3 rounded-full flex flex-col items-center justify-center transition-all ${
-        isActive 
-          ? 'text-amber-500 bg-zinc-700' 
+      className={`p-3 rounded-full flex flex-col items-center justify-center transition-all ${isActive
+          ? 'text-amber-500 bg-zinc-700'
           : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'
-      }`}
+        }`}
       aria-current={isActive ? 'page' : undefined}
     >
       <Icon className="w-5 h-5" />

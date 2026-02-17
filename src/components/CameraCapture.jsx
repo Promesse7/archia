@@ -226,7 +226,7 @@ export default function CameraCapture({
           muted
           className={`w-full h-full object-cover transform scale-x-[-1] ${stream ? "block" : "hidden"}`}
         />
-        
+
         {/* Captured Fragment Display */}
         {capturedFragment && (
           <img
@@ -241,7 +241,7 @@ export default function CameraCapture({
       <div className="pointer-events-none absolute inset-0">
         {/* Subtle scan lines */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100%_4px]" />
-        
+
         {/* Radial focus glow */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(217,119,6,0.08),transparent_70%)]" />
       </div>
@@ -251,7 +251,7 @@ export default function CameraCapture({
         <div className="relative w-72 h-72 md:w-96 md:h-96">
           {/* Main frame */}
           <div className="absolute inset-0 border border-amber-500/30 rounded-2xl backdrop-blur-sm" />
-          
+
           {/* Corner accents */}
           <div className="absolute top-0 left-0 w-10 h-10 border-t border-l border-amber-500" />
           <div className="absolute top-0 right-0 w-10 h-10 border-t border-r border-amber-500" />
@@ -300,7 +300,7 @@ export default function CameraCapture({
         <div className="absolute bottom-[14vh] left-0 right-0 flex justify-center">
           <div className="flex items-center gap-8 bg-stone-900/70 backdrop-blur-xl px-8 py-4 rounded-full border border-stone-700 shadow-2xl">
             {/* Gallery Button */}
-            <button 
+            <button
               onClick={() => fileInputRef.current?.click()}
               className="w-10 h-10 flex items-center justify-center text-stone-300 hover:text-white transition-colors"
               disabled={processing}
@@ -331,7 +331,7 @@ export default function CameraCapture({
         </div>
       ) : (
         /* Captured Fragment Controls */
-          <div className="absolute bottom-[14vh] left-0 right-0 flex justify-center">
+        <div className="absolute bottom-[14vh] left-0 right-0 flex justify-center">
           <div className="flex items-center gap-4 bg-stone-900/70 backdrop-blur-xl px-8 py-4 rounded-full border border-stone-700 shadow-2xl">
             <button
               onClick={onRetake}

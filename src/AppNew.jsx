@@ -8,6 +8,7 @@ import { getDepthEstimator } from './ai/depthEstimator';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext.jsx';
 import { FragmentProvider } from './contexts/FragmentContext';
 import * as PropTypes from "prop-types";
+import { Analytics } from "@vercel/analytics/next";
 
 // Lazy load pages for performance
 const SplashPage = React.lazy(() => import('./pages/SplashPage'));
@@ -17,6 +18,7 @@ const ReconstructionPage = React.lazy(() => import('./pages/ReconstructionPage')
 const GalleryPage = React.lazy(() => import('./pages/GalleryPage'));
 const PuzzlePage = React.lazy(() => import('./pages/PuzzlePage'));
 const AboutPage = React.lazy(() => import('./pages/AboutPage'));
+const ArchaeologyPage = React.lazy(() => import('./pages/ArchaeologyPage'));
 
 // Error boundary for page loading
 class ErrorBoundary extends React.Component {
@@ -102,6 +104,7 @@ const AppContent = () => {
       reconstruct: <ReconstructionPage fragments={fragments} />,
       gallery: <GalleryPage />,
       puzzle: <PuzzlePage />,
+      archaeology: <ArchaeologyPage fragments={fragments} />,
       about: <AboutPage />
     };
 
@@ -191,6 +194,7 @@ export default function App() {
     <NavigationProvider>
       <FragmentProvider>
         <AppShell>
+          <Analytics />
           <div className="relative min-h-screen pb-24">
             <AppContent />
             <FloatingBottomNav />

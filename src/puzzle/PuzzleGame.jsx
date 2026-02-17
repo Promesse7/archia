@@ -90,8 +90,8 @@ export default function PuzzleGame({ initialPuzzle, onBack }) {
             key={level}
             onClick={() => setDifficulty(level)}
             className={`px-5 py-2.5 rounded-full cursor-pointer text-sm font-medium capitalize transition-all duration-300 ${difficulty === level
-                ? 'bg-clay-600 text-white'
-                : 'bg-charcoal-200 dark:bg-charcoal-700 text-charcoal-700 dark:text-charcoal-300 hover:bg-charcoal-300 dark:hover:bg-charcoal-600'
+              ? 'bg-clay-600 text-white'
+              : 'bg-charcoal-200 dark:bg-charcoal-700 text-charcoal-700 dark:text-charcoal-300 hover:bg-charcoal-300 dark:hover:bg-charcoal-600'
               }`}
           >
             {level}

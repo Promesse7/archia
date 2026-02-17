@@ -6,7 +6,7 @@ const ScreenContainer = ({ children, screenId, className = '' }) => {
   const { currentPage, isNavigating } = useNavigation();
   const isActive = currentPage === screenId;
   const prevIsActive = useRef(false);
-  
+
   // Track previous active state for exit animations
   useEffect(() => {
     if (isActive) {
@@ -22,7 +22,7 @@ const ScreenContainer = ({ children, screenId, className = '' }) => {
   return (
     <div
       className={`
-        min-h-screen w-full 
+        min-h-screen w-full overflow-hidden
         transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${isActive ? 'opacity-100' : 'opacity-0'}
         ${isActive ? 'translate-y-0' : '-translate-y-3'}

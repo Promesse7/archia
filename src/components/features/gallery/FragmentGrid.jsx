@@ -29,7 +29,7 @@ export const FragmentGrid = React.forwardRef(
 
     if (fragments.length === 0) {
       return (
-        <div ref={ref} className={cn('text-center py-12', className)} {...props}>
+        <div ref={ref} className={cn('w-full overflow-y-auto', className)} {...props}>
           <div className="text-zinc-400 text-lg">No fragments captured yet</div>
           <div className="text-zinc-500 text-sm mt-2">Start by capturing some pottery fragments</div>
         </div>
@@ -39,7 +39,7 @@ export const FragmentGrid = React.forwardRef(
     return (
       <div
         ref={ref}
-        className={cn(getGridClasses(), className)}
+        className={cn(getGridClasses(), 'overflow-y-auto', className)}
         role="grid"
         aria-label="Fragment gallery"
         {...props}

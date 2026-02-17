@@ -11,12 +11,12 @@ const cardVariants = {
 
 const Card = React.forwardRef(({ className, padding = 'md', children, ...props }, ref) => {
   const paddingClass = cardVariants.padding[padding] || cardVariants.padding.md;
-  
+
   return (
     <div
       ref={ref}
       className={`
-        rounded-xl border border-charcoal-700/50 bg-charcoal-900/50 backdrop-blur-sm text-white
+        rounded-xl border border-charcoal-700/50 bg-charcoal-900/50 backdrop-blur-sm text-white overflow-hidden
         shadow-lg shadow-black/20
         transition-all duration-[200ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
         hover:-translate-y-1 hover:shadow-xl hover:shadow-charcoal-900/20

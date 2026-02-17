@@ -14,12 +14,12 @@ const badgeSizes = {
   lg: 'px-3 py-1.5 text-base font-medium',
 };
 
-const Badge = React.forwardRef(({ 
-  className, 
-  variant = 'neutral', 
-  size = 'md', 
-  children, 
-  ...props 
+const Badge = React.forwardRef(({
+  className,
+  variant = 'neutral',
+  size = 'md',
+  children,
+  ...props
 }, ref) => {
   const variantClass = badgeVariants[variant] || badgeVariants.neutral;
   const sizeClass = badgeSizes[size] || badgeSizes.md;
@@ -28,7 +28,7 @@ const Badge = React.forwardRef(({
     <span
       ref={ref}
       className={`
-        inline-flex items-center justify-center rounded-full border font-medium
+        inline-flex items-center justify-center rounded-full border font-medium overflow-hidden
         transition-all duration-[200ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
         focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 focus:ring-offset-zinc-900
         ${variantClass} ${sizeClass} ${className}

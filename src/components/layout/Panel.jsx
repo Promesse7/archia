@@ -14,24 +14,24 @@ const variantClasses = {
   glass: 'bg-zinc-900/30 backdrop-blur-sm border border-zinc-700/30'
 };
 
-export const Panel = React.forwardRef<HTMLDivElement, PanelProps>(
+export const Panel = React.forwardRef < HTMLDivElement, PanelProps> (
   ({ children, className, variant = 'default', ...props }, ref) => {
-  const variantClass = variantClasses[variant] || variantClasses.default;
-  
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        'rounded-lg',
-        variantClass,
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-});
+    const variantClass = variantClasses[variant] || variantClasses.default;
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'rounded-lg overflow-hidden',
+          variantClass,
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  });
 
 Panel.displayName = 'Panel';
 

@@ -17,12 +17,12 @@ import { cn } from '../../utils/cn';
  */
 
 export const OptimizedImage = React.forwardRef(
-  ({ 
-    src, 
-    alt, 
-    className, 
-    width, 
-    height, 
+  ({
+    src,
+    alt,
+    className,
+    width,
+    height,
     loading = 'lazy',
     sizes,
     srcSet,
@@ -33,7 +33,7 @@ export const OptimizedImage = React.forwardRef(
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [isInView, setIsInView] = useState(loading === 'eager');
-    const imgRef = useRef<HTMLImageElement>(null);
+    const imgRef = useRef < HTMLImageElement > (null);
 
     // Intersection Observer for lazy loading
     useEffect(() => {
@@ -82,9 +82,9 @@ export const OptimizedImage = React.forwardRef(
       <div className={cn('relative overflow-hidden', className)}>
         {/* Loading placeholder */}
         {!isLoaded && !hasError && placeholder && (
-          <div 
+          <div
             className="absolute inset-0 bg-zinc-800 flex items-center justify-center"
-            style={{ 
+            style={{
               backgroundImage: `linear-gradient(45deg, #27272a 25%, transparent 50%, #27272a 75%)`,
               backgroundSize: '20px 20px',
               backgroundRepeat: 'no-repeat',

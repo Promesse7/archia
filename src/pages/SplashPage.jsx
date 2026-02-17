@@ -42,25 +42,25 @@ export default function SplashPage() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center text-ink">
+    <div className="min-h-screen bg-surface text-surface-foreground flex flex-col items-center justify-center p-8 overflow-hidden">
       <div className="text-center space-y-8">
         <h1 className="text-title font-bold bg-gradient-to-r from-accent to-accentHover bg-clip-text text-transparent">
           ARCHIA
         </h1>
-        
+
         <p className="text-body text-muted max-w-md">
           AI-Powered Archaeological Reconstruction
         </p>
 
         <div className="w-64 space-y-3">
           <div className="text-label text-muted text-center">{stage}</div>
-          
-          <progress 
+
+          <progress
             className="w-full h-1 bg-surface rounded-full overflow-hidden [&::-webkit-progress-bar]:bg-surface [&::-webkit-progress-value]:bg-gradient-to-r [&::-webkit-progress-value]:from-accent [&::-webkit-progress-value]:to-accentHover transition-all duration-500"
             value={progress}
             max={100}
           />
-          
+
           <div className="text-label text-muted text-center">{progress}%</div>
         </div>
 

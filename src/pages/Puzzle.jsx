@@ -87,7 +87,7 @@ export default function PuzzlePage({ onNavigate }) {
   const startPuzzle = useCallback((mode) => {
     setGameMode(mode);
     setGameState('playing');
-    
+
     // Initialize puzzle based on mode
     const modeConfig = puzzleModes.find(m => m.id === mode);
     setTotalPieces(modeConfig.pieces);
@@ -95,7 +95,7 @@ export default function PuzzlePage({ onNavigate }) {
     setTimer(0);
     setIsTimerRunning(mode === 'timed');
     setShowHint(false);
-    
+
     // Generate puzzle data (simplified for demo)
     setPuzzleData({
       pieces: Array.from({ length: modeConfig.pieces }, (_, i) => ({
@@ -109,7 +109,7 @@ export default function PuzzlePage({ onNavigate }) {
 
   const handlePiecePlacement = useCallback((pieceId) => {
     if (!puzzleData) return;
-    
+
     setPuzzleData(prev => {
       const newPieces = prev.pieces.map(piece => {
         if (piece.id === pieceId) {
@@ -122,24 +122,24 @@ export default function PuzzlePage({ onNavigate }) {
         }
         return piece;
       });
-      
+
       const placedCount = newPieces.filter(p => p.isPlaced).length;
       setPlacedPieces(placedCount);
-      
+
       // Check for completion
       if (placedCount === totalPieces) {
         setGameState('completed');
         setIsTimerRunning(false);
         generateInsights(gameMode);
       }
-      
+
       return { pieces: newPieces };
     });
   }, [puzzleData, totalPieces, gameMode]);
 
   const generateInsights = useCallback((mode) => {
     const insights = [];
-    
+
     if (mode === 'quick') {
       insights.push('Great job! You\'ve mastered the basics of fragment reconstruction.');
       insights.push('Quick puzzles help develop spatial recognition skills.');
@@ -150,7 +150,7 @@ export default function PuzzlePage({ onNavigate }) {
       insights.push('Free play allows for deep exploration of reconstruction techniques.');
       insights.push('Take your time to understand each fragment\'s unique characteristics.');
     }
-    
+
     setInsights(insights);
   }, [gameMode, timer]);
 
@@ -200,21 +200,21 @@ export default function PuzzlePage({ onNavigate }) {
               >
                 <CardContent className="p-6 text-center space-y-4">
                   <div className="text-4xl">{puzzleMode.icon}</div>
-                  
+
                   <div className="space-y-2">
                     <h3 className="text-xl font-semibold text-white">
                       {puzzleMode.title}
                     </h3>
-                    
+
                     <Badge variant="ghost" size="sm" color={getDifficultyColor(puzzleMode.difficulty)}>
                       {puzzleMode.difficulty}
                     </Badge>
                   </div>
-                  
+
                   <p className="text-charcoal-400 text-sm leading-relaxed">
                     {puzzleMode.description}
                   </p>
-                  
+
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-charcoal-500">Pieces:</span>
@@ -225,7 +225,7 @@ export default function PuzzlePage({ onNavigate }) {
                       <span className="text-white font-medium">{puzzleMode.timeEstimate}</span>
                     </div>
                   </div>
-                  
+
                   <Button
                     variant="primary"
                     size="lg"
@@ -246,7 +246,7 @@ export default function PuzzlePage({ onNavigate }) {
             {/* Game Header */}
             <Card className="bg-charcoal-700/50 border-charcoal-600/50">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
                   <div className="flex items-center gap-6">
                     <div className="text-white">
                       <span className="font-medium">
@@ -256,7 +256,7 @@ export default function PuzzlePage({ onNavigate }) {
                         Progress: {placedPieces} / {totalPieces} pieces
                       </div>
                     </div>
-                    
+
                     {/* Progress Bar */}
                     <div className="w-48 h-2 bg-charcoal-600 rounded-full overflow-hidden">
                       <div
@@ -265,7 +265,7 @@ export default function PuzzlePage({ onNavigate }) {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-4">
                     {/* Timer for timed mode */}
                     {gameMode === 'timed' && (
@@ -274,7 +274,7 @@ export default function PuzzlePage({ onNavigate }) {
                         <span className="font-mono">{formatTime(timer)}</span>
                       </div>
                     )}
-                    
+
                     {/* Controls */}
                     <div className="flex gap-2">
                       <Button
@@ -286,7 +286,7 @@ export default function PuzzlePage({ onNavigate }) {
                         <LightbulbIcon />
                         Hint
                       </Button>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -296,7 +296,7 @@ export default function PuzzlePage({ onNavigate }) {
                         <ResetIcon />
                         Reset
                       </Button>
-                      
+
                       <Button
                         variant="ghost"
                         size="sm"
@@ -315,7 +315,7 @@ export default function PuzzlePage({ onNavigate }) {
               <CardContent className="p-8">
                 <div className="aspect-square max-w-2xl mx-auto">
                   {/* Simplified puzzle grid for demo */}
-                  <div 
+                  <div
                     className={`
                       grid gap-2 w-full h-full
                       ${totalPieces === 9 ? 'grid-cols-3' : 'grid-cols-4'}
@@ -324,7 +324,7 @@ export default function PuzzlePage({ onNavigate }) {
                     {Array.from({ length: totalPieces }, (_, index) => {
                       const piece = puzzleData.pieces.find(p => p.correctPosition === index);
                       const isPlaced = piece?.isPlaced;
-                      
+
                       return (
                         <div
                           key={index}
@@ -332,8 +332,8 @@ export default function PuzzlePage({ onNavigate }) {
                           className={`
                             border-2 rounded-lg flex items-center justify-center text-2xl font-bold
                             transition-all duration-300 cursor-pointer
-                            ${isPlaced 
-                              ? 'bg-amber-500/20 border-amber-500 text-amber-400' 
+                            ${isPlaced
+                              ? 'bg-amber-500/20 border-amber-500 text-amber-400'
                               : 'bg-charcoal-800/50 border-charcoal-600 text-charcoal-400 hover:border-amber-500/50 hover:bg-charcoal-700/50'
                             }
                           `}
@@ -344,7 +344,7 @@ export default function PuzzlePage({ onNavigate }) {
                     })}
                   </div>
                 </div>
-                
+
                 {/* Hint Display */}
                 {showHint && (
                   <div className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
@@ -353,7 +353,7 @@ export default function PuzzlePage({ onNavigate }) {
                       <div className="text-charcoal-300 text-sm">
                         <p className="font-medium mb-1">Archaeological Insight:</p>
                         <p>
-                          Look for patterns in the fragment edges. Pottery fragments often have distinctive 
+                          Look for patterns in the fragment edges. Pottery fragments often have distinctive
                           break patterns that can help you identify how they fit together.
                         </p>
                       </div>
@@ -372,7 +372,7 @@ export default function PuzzlePage({ onNavigate }) {
               <div className="flex justify-center">
                 <TrophyIcon className="w-16 h-16 text-amber-500" />
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="text-2xl font-bold text-white">
                   Puzzle Complete!
@@ -381,7 +381,7 @@ export default function PuzzlePage({ onNavigate }) {
                   You successfully reconstructed the pottery fragment
                 </p>
               </div>
-              
+
               {/* Stats */}
               <div className="flex justify-center gap-8">
                 {gameMode === 'timed' && (
@@ -392,7 +392,7 @@ export default function PuzzlePage({ onNavigate }) {
                     <div className="text-sm text-charcoal-500">Final Time</div>
                   </div>
                 )}
-                
+
                 <div className="text-center">
                   <div className="text-2xl font-bold text-amber-400">
                     {totalPieces}
@@ -400,7 +400,7 @@ export default function PuzzlePage({ onNavigate }) {
                   <div className="text-sm text-charcoal-500">Pieces Placed</div>
                 </div>
               </div>
-              
+
               {/* Insights */}
               {insights.length > 0 && (
                 <div className="space-y-3">
@@ -414,7 +414,7 @@ export default function PuzzlePage({ onNavigate }) {
                   </div>
                 </div>
               )}
-              
+
               {/* Actions */}
               <div className="flex justify-center gap-4">
                 <Button
@@ -424,7 +424,7 @@ export default function PuzzlePage({ onNavigate }) {
                 >
                   Play Again
                 </Button>
-                
+
                 <Button
                   variant="secondary"
                   size="lg"

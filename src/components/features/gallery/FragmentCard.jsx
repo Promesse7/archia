@@ -10,24 +10,24 @@ interface FragmentCardProps {
   className?: string;
 }
 
-export const FragmentCard = React.forwardRef<HTMLDivElement, FragmentCardProps>(
+export const FragmentCard = React.forwardRef < HTMLDivElement, FragmentCardProps> (
   ({ fragment, isSelected, onSelect, onView, className, ...props }, ref) => {
     const [isHovered, setIsHovered] = useState(false);
-    
+
     const fragmentId = fragment.timestamp || fragment.id;
     const confidence = fragment.classification?.confidence || 0;
     const fragmentType = fragment.classification?.fragmentType || 'Unknown';
     const pointCount = fragment.pointCloud?.length || 0;
-    
+
     const handleClick = useCallback(() => {
       onSelect(fragmentId);
     }, [fragmentId, onSelect]);
-    
+
     const handleView = useCallback((e: React.MouseEvent) => {
       e.stopPropagation();
       onView(fragmentId);
     }, [fragmentId, onView]);
-    
+
     const getVariantColor = (type: string) => {
       const variants = {
         rim: 'success',
@@ -37,14 +37,14 @@ export const FragmentCard = React.forwardRef<HTMLDivElement, FragmentCardProps>(
       };
       return variants[type] || variants.unknown;
     };
-    
+
     return (
       <Card
         ref={ref}
         className={cn(
-          'cursor-pointer transition-all duration-300 transform',
-          isSelected 
-            ? 'ring-2 ring-amber-500/50 border-amber-500/50 scale-105' 
+          'group cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-xl overflow-hidden',
+          isSelected
+            ? 'ring-2 ring-amber-500/50 border-amber-500/50 scale-105'
             : 'border-zinc-700/50 hover:border-amber-500/30 hover:scale-[1.02] hover:-translate-y-1',
           isHovered && !isSelected && 'scale-[1.03] -translate-y-2',
           className
@@ -62,7 +62,7 @@ export const FragmentCard = React.forwardRef<HTMLDivElement, FragmentCardProps>(
               alt={`Fragment ${fragmentType}`}
               className="w-full h-full object-cover"
             />
-            
+
             {/* Selection Indicator */}
             {isSelected && (
               <div className="absolute top-2 right-2 bg-amber-500 rounded-full p-1">
@@ -71,7 +71,7 @@ export const FragmentCard = React.forwardRef<HTMLDivElement, FragmentCardProps>(
                 </svg>
               </div>
             )}
-            
+
             {/* Hover Overlay */}
             {isHovered && (
               <div className="absolute inset-0 bg-amber-500/10 backdrop-blur-sm flex items-center justify-center">
@@ -81,23 +81,23 @@ export const FragmentCard = React.forwardRef<HTMLDivElement, FragmentCardProps>(
               </div>
             )}
           </div>
-          
+
           {/* Fragment Info */}
           <div className="p-4 space-y-3">
             {/* Classification Badge */}
             <div className="flex items-center justify-between">
-              <Badge 
+              <Badge
                 variant={getVariantColor(fragmentType)}
                 size="sm"
               >
                 {fragmentType}
               </Badge>
-              
+
               <div className="text-xs text-zinc-500">
                 {(confidence * 100).toFixed(1)}%
               </div>
             </div>
-            
+
             {/* Additional Info */}
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -106,7 +106,7 @@ export const FragmentCard = React.forwardRef<HTMLDivElement, FragmentCardProps>(
                   {pointCount}
                 </span>
               </div>
-              
+
               <div className="flex justify-between">
                 <span className="text-zinc-500">Captured:</span>
                 <span className="text-white font-medium text-xs">
@@ -114,7 +114,7 @@ export const FragmentCard = React.forwardRef<HTMLDivElement, FragmentCardProps>(
                 </span>
               </div>
             </div>
-            
+
             {/* Quick Actions */}
             <div className="flex gap-2 pt-2 border-t border-zinc-800">
               <Button
@@ -125,7 +125,7 @@ export const FragmentCard = React.forwardRef<HTMLDivElement, FragmentCardProps>(
               >
                 {isSelected ? 'Selected' : 'Select'}
               </Button>
-              
+
               <Button
                 variant="secondary"
                 size="sm"

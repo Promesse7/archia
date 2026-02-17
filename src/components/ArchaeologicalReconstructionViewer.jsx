@@ -61,7 +61,7 @@ export default function ArchaeologicalReconstructionViewer({
   const meshRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const mouseRef = useRef(new THREE.Vector2());
-  
+
   // Feature states
   const [annotations, setAnnotations] = useState([]);
   const [measurements, setMeasurements] = useState([]);
@@ -205,7 +205,7 @@ export default function ArchaeologicalReconstructionViewer({
       mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
-      
+
       if (annotationMode) {
         handleAnnotationPlacement();
       } else if (measurementMode) {
@@ -224,7 +224,7 @@ export default function ArchaeologicalReconstructionViewer({
 
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
       const intersects = raycasterRef.current.intersectObjects(scene.children, true);
-      
+
       setHoveredObject(intersects.length > 0 ? intersects[0].object : null);
     };
 
@@ -258,7 +258,7 @@ export default function ArchaeologicalReconstructionViewer({
         date: '',
         notes: ''
       };
-      
+
       setAnnotations(prev => [...prev, annotation]);
       addToHistory('addAnnotation', annotation);
     }
@@ -271,10 +271,10 @@ export default function ArchaeologicalReconstructionViewer({
     const intersects = raycasterRef.current.intersectObjects(scene.children, true);
     if (intersects.length > 0) {
       const point = intersects[0].point;
-      
+
       setMeasurements(prev => {
         const newMeasurements = [...prev];
-        
+
         if (measurementMode === 'distance') {
           if (newMeasurements.length % 2 === 1) {
             // Complete distance measurement
@@ -299,7 +299,7 @@ export default function ArchaeologicalReconstructionViewer({
             const v1 = p1.clone().sub(point);
             const v2 = p2.clone().sub(point);
             const angle = v1.angleTo(v2) * (180 / Math.PI);
-            
+
             newMeasurements.push({
               type: 'angle',
               vertex: point,
@@ -313,7 +313,7 @@ export default function ArchaeologicalReconstructionViewer({
             newMeasurements.push(point);
           }
         }
-        
+
         return newMeasurements;
       });
     }
@@ -327,7 +327,7 @@ export default function ArchaeologicalReconstructionViewer({
     if (intersects.length > 0) {
       const object = intersects[0].object;
       setSelectedGeometry(object);
-      
+
       // Show metadata panel
       console.log('Selected object:', object);
     }
@@ -361,7 +361,7 @@ export default function ArchaeologicalReconstructionViewer({
 
     rendererRef.current.render(sceneRef.current, cameraRef.current);
     const dataURL = rendererRef.current.domElement.toDataURL('image/png');
-    
+
     const link = document.createElement('a');
     link.download = `pottery-reconstruction-${Date.now()}.png`;
     link.href = dataURL;
@@ -407,7 +407,7 @@ export default function ArchaeologicalReconstructionViewer({
     clonedMesh.scale.set(0.5, 0.5, 0.5);
     clonedMesh.castShadow = true;
     clonedMesh.receiveShadow = true;
-    
+
     sceneRef.current.add(clonedMesh);
     meshRef.current = clonedMesh;
 
@@ -440,7 +440,7 @@ export default function ArchaeologicalReconstructionViewer({
         // End points
         const sphereGeometry = new THREE.SphereGeometry(0.05);
         const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        
+
         const startSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         startSphere.position.copy(measurement.start);
         startSphere.userData.isMeasurement = true;
@@ -454,8 +454,8 @@ export default function ArchaeologicalReconstructionViewer({
       } else if (measurement.type === 'angle' && measurement.vertex && measurement.point1 && measurement.point2) {
         // Angle visualization
         const angleGeometry = new THREE.RingGeometry(0.5, 1, 32, 1, 0, measurement.value * Math.PI / 180);
-        const angleMaterial = new THREE.MeshBasicMaterial({ 
-          color: 0xff6600, 
+        const angleMaterial = new THREE.MeshBasicMaterial({
+          color: 0xff6600,
           side: THREE.DoubleSide,
           opacity: 0.7,
           transparent: true
@@ -463,25 +463,25 @@ export default function ArchaeologicalReconstructionViewer({
         const angleMesh = new THREE.Mesh(angleGeometry, angleMaterial);
         angleMesh.position.copy(measurement.vertex);
         angleMesh.userData.isMeasurement = true;
-        
+
         // Orient the angle arc
         const v1 = measurement.point1.clone().sub(measurement.vertex).normalize();
         const v2 = measurement.point2.clone().sub(measurement.vertex).normalize();
         const normal = new THREE.Vector3().crossVectors(v1, v2).normalize();
         angleMesh.lookAt(measurement.vertex.clone().add(normal));
-        
+
         sceneRef.current.add(angleMesh);
 
         // Angle lines
         const line1Geometry = new THREE.BufferGeometry().setFromPoints([measurement.vertex, measurement.point1]);
         const line2Geometry = new THREE.BufferGeometry().setFromPoints([measurement.vertex, measurement.point2]);
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0xff6600, linewidth: 2 });
-        
+
         const line1 = new THREE.Line(line1Geometry, lineMaterial);
         const line2 = new THREE.Line(line2Geometry, lineMaterial);
         line1.userData.isMeasurement = true;
         line2.userData.isMeasurement = true;
-        
+
         sceneRef.current.add(line1);
         sceneRef.current.add(line2);
       }
@@ -499,9 +499,8 @@ export default function ArchaeologicalReconstructionViewer({
           {/* Annotation tools */}
           <button
             onClick={() => setAnnotationMode(!annotationMode)}
-            className={`p-2 rounded transition-colors ${
-              annotationMode ? 'bg-amber-500/20 text-amber-400' : 'text-zinc-400 hover:text-white'
-            }`}
+            className={`p-2 rounded transition-colors ${annotationMode ? 'bg-amber-500/20 text-amber-400' : 'text-zinc-400 hover:text-white'
+              }`}
             title="Toggle annotation mode"
           >
             <AnnotationIcon />
@@ -511,18 +510,16 @@ export default function ArchaeologicalReconstructionViewer({
           <div className="flex gap-1">
             <button
               onClick={() => setMeasurementMode(measurementMode === 'distance' ? null : 'distance')}
-              className={`p-2 rounded transition-colors ${
-                measurementMode === 'distance' ? 'bg-green-500/20 text-green-400' : 'text-zinc-400 hover:text-white'
-              }`}
+              className={`p-2 rounded transition-colors ${measurementMode === 'distance' ? 'bg-green-500/20 text-green-400' : 'text-zinc-400 hover:text-white'
+                }`}
               title="Distance measurement"
             >
               <MeasureIcon />
             </button>
             <button
               onClick={() => setMeasurementMode(measurementMode === 'angle' ? null : 'angle')}
-              className={`p-2 rounded transition-colors ${
-                measurementMode === 'angle' ? 'bg-orange-500/20 text-orange-400' : 'text-zinc-400 hover:text-white'
-              }`}
+              className={`p-2 rounded transition-colors ${measurementMode === 'angle' ? 'bg-orange-500/20 text-orange-400' : 'text-zinc-400 hover:text-white'
+                }`}
               title="Angle measurement"
             >
               <AngleIcon />
@@ -544,9 +541,8 @@ export default function ArchaeologicalReconstructionViewer({
               <button
                 key={layer}
                 onClick={() => setShowLayers(prev => ({ ...prev, [layer]: !visible }))}
-                className={`p-1 rounded text-xs transition-colors ${
-                  visible ? 'bg-blue-500/20 text-blue-400' : 'text-zinc-500 hover:text-zinc-300'
-                }`}
+                className={`p-1 rounded text-xs transition-colors ${visible ? 'bg-blue-500/20 text-blue-400' : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
               >
                 {layer.charAt(0).toUpperCase() + layer.slice(1)}
               </button>
@@ -563,11 +559,10 @@ export default function ArchaeologicalReconstructionViewer({
                   setShowCrossSection(true);
                   setCrossSectionPlane(plane);
                 }}
-                className={`p-1 rounded text-xs transition-colors ${
-                  showCrossSection && crossSectionPlane === plane 
-                    ? 'bg-purple-500/20 text-purple-400' 
+                className={`p-1 rounded text-xs transition-colors ${showCrossSection && crossSectionPlane === plane
+                    ? 'bg-purple-500/20 text-purple-400'
                     : 'text-zinc-500 hover:text-zinc-300'
-                }`}
+                  }`}
               >
                 {plane}-Plane
               </button>
@@ -693,7 +688,7 @@ export default function ArchaeologicalReconstructionViewer({
           {measurements.length > 0 && (
             <div>
               Measurements: {
-                Math.floor(measurements.filter(m => m.type === 'distance').length) + 
+                Math.floor(measurements.filter(m => m.type === 'distance').length) +
                 Math.floor(measurements.filter(m => m.type === 'angle').length)
               }
             </div>

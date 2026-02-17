@@ -12,51 +12,51 @@ interface ViewerControlsProps {
   className?: string;
 }
 
-export const ViewerControls = React.forwardRef<HTMLDivElement, ViewerControlsProps>(
-  ({ 
-    onRotate, 
-    onZoom, 
-    onReset, 
+export const ViewerControls = React.forwardRef < HTMLDivElement, ViewerControlsProps> (
+  ({
+    onRotate,
+    onZoom,
+    onReset,
     onToggleAutoRotate,
     autoRotate,
     zoom,
     className,
-    ...props 
+    ...props
   }, ref) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    
+
     const handleRotateX = useCallback((value: number) => {
       onRotate('x', value);
     }, [onRotate]);
-    
+
     const handleRotateY = useCallback((value: number) => {
       onRotate('y', value);
     }, [onRotate]);
-    
+
     const handleRotateZ = useCallback((value: number) => {
       onRotate('z', value);
     }, [onRotate]);
-    
+
     const handleZoomIn = useCallback(() => {
       onZoom(Math.min(zoom + 0.1, 2));
     }, [zoom, onZoom]);
-    
+
     const handleZoomOut = useCallback(() => {
       onZoom(Math.max(zoom - 0.1, 0.5));
     }, [zoom, onZoom]);
-    
+
     const handleReset = useCallback(() => {
       onReset();
     }, [onReset]);
-    
+
     const handleToggleAutoRotate = useCallback(() => {
       onToggleAutoRotate();
     }, [onToggleAutoRotate]);
-    
+
     return (
-      <div 
-        ref={ref} 
-        className={cn('bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4', className)} 
+      <div
+        ref={ref}
+        className={cn('bg-zinc-800/50 border border-zinc-700/50 rounded-lg p-4 overflow-hidden', className)}
         {...props}
       >
         {/* Header */}
@@ -70,7 +70,7 @@ export const ViewerControls = React.forwardRef<HTMLDivElement, ViewerControlsPro
             {isExpanded ? '−' : '+'}
           </IconButton>
         </div>
-        
+
         {/* Controls */}
         {isExpanded && (
           <div className="space-y-4">
@@ -128,7 +128,7 @@ export const ViewerControls = React.forwardRef<HTMLDivElement, ViewerControlsPro
                 </Button>
               </div>
             </div>
-            
+
             {/* Zoom Controls */}
             <div className="space-y-2">
               <h4 className="text-zinc-400 text-sm font-medium">Zoom</h4>
@@ -152,7 +152,7 @@ export const ViewerControls = React.forwardRef<HTMLDivElement, ViewerControlsPro
                 </Button>
               </div>
             </div>
-            
+
             {/* Action Controls */}
             <div className="space-y-2">
               <h4 className="text-zinc-400 text-sm font-medium">Actions</h4>
@@ -165,7 +165,7 @@ export const ViewerControls = React.forwardRef<HTMLDivElement, ViewerControlsPro
                 >
                   {autoRotate ? 'Stop Rotation' : 'Auto Rotate'}
                 </Button>
-                
+
                 <Button
                   onClick={handleReset}
                   variant="ghost"

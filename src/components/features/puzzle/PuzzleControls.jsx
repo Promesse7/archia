@@ -12,14 +12,14 @@ interface PuzzleControlsProps {
   className?: string;
 }
 
-export const PuzzleControls = React.forwardRef<HTMLDivElement, PuzzleControlsProps>(
+export const PuzzleControls = React.forwardRef < HTMLDivElement, PuzzleControlsProps> (
   ({ mode, timer, isPlaying, onReset, onHint, onExit, className, ...props }, ref) => {
     const formatTime = (seconds: number) => {
       const mins = Math.floor(seconds / 60);
       const secs = seconds % 60;
       return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
-    
+
     const getModeInfo = () => {
       switch (mode) {
         case 'quick':
@@ -32,17 +32,17 @@ export const PuzzleControls = React.forwardRef<HTMLDivElement, PuzzleControlsPro
           return { label: 'Puzzle', variant: 'neutral' as const };
       }
     };
-    
+
     const modeInfo = getModeInfo();
-    
+
     return (
-      <div ref={ref} className={cn('space-y-4', className)} {...props}>
+      <div ref={ref} className={cn('space-y-4 overflow-hidden', className)} {...props}>
         {/* Mode Info */}
         <div className="flex items-center justify-between">
           <Badge variant={modeInfo.variant} size="sm">
             {modeInfo.label}
           </Badge>
-          
+
           {mode === 'timed' && (
             <div className="flex items-center gap-2 text-white">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +52,7 @@ export const PuzzleControls = React.forwardRef<HTMLDivElement, PuzzleControlsPro
             </div>
           )}
         </div>
-        
+
         {/* Action Buttons */}
         <div className="flex gap-2">
           <Button
@@ -67,7 +67,7 @@ export const PuzzleControls = React.forwardRef<HTMLDivElement, PuzzleControlsPro
             </svg>
             Hint
           </Button>
-          
+
           <Button
             onClick={onReset}
             variant="ghost"
@@ -79,7 +79,7 @@ export const PuzzleControls = React.forwardRef<HTMLDivElement, PuzzleControlsPro
             </svg>
             Reset
           </Button>
-          
+
           <Button
             onClick={onExit}
             variant="outline"

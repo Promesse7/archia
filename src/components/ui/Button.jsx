@@ -13,22 +13,22 @@ const buttonSizes = {
   lg: 'h-12 px-6 text-base rounded-lg min-h-12 min-w-12',
 };
 
-const Button = React.forwardRef(({ 
-  className, 
-  variant = 'primary', 
-  size = 'md', 
-  disabled = false, 
-  onClick, 
-  children, 
-  ...props 
+const Button = React.forwardRef(({
+  className,
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  onClick,
+  children,
+  ...props
 }, ref) => {
   const variantClass = buttonVariants[variant] || buttonVariants.primary;
   const sizeClass = buttonSizes[size] || buttonSizes.md;
-  
+
   return (
     <button
       className={`
-        inline-flex items-center justify-center font-medium
+        inline-flex items-center justify-center font-medium overflow-hidden
         transition-all duration-[150ms] ease-[cubic-bezier(0.4,0,0.2,1)]
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ochre-500 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-950
         disabled:pointer-events-none disabled:cursor-not-allowed

@@ -40,22 +40,22 @@ class ErrorBoundary extends React.Component {
             3D Rendering Error
           </h3>
           <p className="text-zinc-400 text-center mb-4">
-            {this.props.errorMessage || 
-             "The 3D viewer encountered an error. Please try refreshing the page."}
+            {this.props.errorMessage ||
+              "The 3D viewer encountered an error. Please try refreshing the page."}
           </p>
-          
+
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <details className="mt-4 p-4 bg-zinc-800 rounded border border-zinc-700">
               <summary className="text-amber-400 cursor-pointer mb-2">
                 Error Details (Development Only)
               </summary>
-              <pre className="text-xs text-zinc-300 overflow-auto max-h-40">
+              <pre className="text-xs text-zinc-300 overflow-auto max-h-40 bg-zinc-900 p-2 rounded border border-zinc-700">
                 {this.state.error.toString()}
                 {this.state.errorInfo.componentStack}
               </pre>
             </details>
           )}
-          
+
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition-colors"

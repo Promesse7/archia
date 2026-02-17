@@ -9,7 +9,7 @@ const FragmentList = ({
   if (!fragments?.length) return null;
 
   return (
-    <div className="absolute top-4 right-4 bg-zinc-800/90 backdrop-blur-sm p-4 rounded-lg shadow-lg max-w-xs max-h-[80vh] overflow-y-auto">
+    <div className="absolute top-4 right-4 bg-zinc-800/90 backdrop-blur-sm p-4 rounded-lg shadow-lg max-w-xs max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-600 scrollbar-track-zinc-800">
       <h3 className="text-sm font-semibold mb-2 text-zinc-300">Fragments</h3>
       <div className="space-y-2">
         {fragments.map((fragment) => (
@@ -17,8 +17,8 @@ const FragmentList = ({
             key={fragment.id || fragment.timestamp}
             onClick={() => onFragmentClick(fragment.id || fragment.timestamp)}
             className={`p-2 rounded cursor-pointer transition-colors ${(fragment.id || fragment.timestamp) === activeFragmentId
-                ? 'bg-amber-600/30'
-                : 'hover:bg-zinc-700/50'
+              ? 'bg-amber-600/30'
+              : 'hover:bg-zinc-700/50'
               }`}
           >
             <div className="flex justify-between items-center">

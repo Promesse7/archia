@@ -949,7 +949,7 @@ export default function ReconstructionViewer({
         </button>
 
         {showMetadataPanel && (
-          <div className="bg-black/95 backdrop-blur-md border border-amber-600/30 rounded-lg p-4 mt-2 w-80 max-h-96 overflow-y-auto">
+          <div className="bg-black/95 backdrop-blur-md border border-amber-600/30 rounded-lg p-4 mt-2 w-80 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-amber-600 scrollbar-track-amber-900">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-amber-400 font-bold text-sm">Pottery Recording Standards</h3>
               <button

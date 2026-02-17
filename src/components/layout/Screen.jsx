@@ -19,15 +19,15 @@ const maxWidthClasses = {
   'full': 'max-w-full'
 };
 
-export const Screen = React.forwardRef<HTMLDivElement, ScreenProps>(
+export const Screen = React.forwardRef < HTMLDivElement, ScreenProps> (
   ({ children, className, maxWidth = '6xl', ...props }, ref) => {
     const maxWidthClass = maxWidthClasses[maxWidth];
-    
+
     return (
       <div
         ref={ref}
         className={cn(
-          'min-h-screen w-full px-6 py-8 sm:px-8 sm:py-12',
+          'min-h-screen w-full px-6 py-8 sm:px-8 sm:py-12 overflow-hidden',
           maxWidthClass,
           className
         )}

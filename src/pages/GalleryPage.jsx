@@ -457,7 +457,7 @@ export default function GalleryPage() {
                       </>
                     ) : (
                       // List View Layout
-                      <div className="flex items-center p-4 gap-4">
+                      <div className="flex items-center p-4 gap-4 overflow-hidden">
                         {/* Thumbnail */}
                         <div className="relative w-20 h-20 bg-charcoal-950 rounded-lg overflow-hidden flex-shrink-0">
                           <img

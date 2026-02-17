@@ -944,7 +944,7 @@ const EnhancedReconstructionViewer = React.memo(function EnhancedReconstructionV
 
       {/* Professional toolbar */}
       <div className="absolute top-4 left-4 bg-zinc-900/90 backdrop-blur-sm rounded-lg p-2 shadow-xl border border-zinc-700 z-10">
-        <div className="flex flex-col space-y-2 max-h-[80vh] overflow-y-auto">
+        <div className="flex flex-col space-y-2 max-h-[60vh] overflow-y-auto">
           {/* Scientific Visualization Modes */}
           <div className="border-b border-zinc-700 pb-2 mb-2">
             <div className="text-xs text-zinc-500 mb-1 px-1">Visualization</div>
