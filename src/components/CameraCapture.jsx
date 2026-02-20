@@ -9,8 +9,7 @@ export default function CameraCapture({
   cameraStatus,
   capturedFragment,
   onRetake,
-  onAddToSession,
-  processingProgress
+  onAddToSession
 }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -22,6 +21,14 @@ export default function CameraCapture({
   const [status, setStatus] = useState("Ready");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [aiStatus, setAiStatus] = useState("INITIALIZING...");
+
+  // Interactive processing states
+  const [showProcessingOverlay, setShowProcessingOverlay] = useState(false);
+  const [processingStage, setProcessingStage] = useState("ANALYZING");
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [interactiveMode, setInteractiveMode] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+  const [processingComplete, setProcessingComplete] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -146,6 +153,40 @@ export default function CameraCapture({
     setProcessing(true);
     setError(null);
     setStatus("Processing...");
+    setShowProcessingOverlay(true);
+    setProcessingStage("EXTRACTING GEOMETRY");
+    setProcessingProgress(0);
+    setProcessingComplete(false);
+    setClickCount(0);
+
+    // Simulate processing stages with animations
+    const simulateProcessingStages = async () => {
+      const stages = [
+        { name: "EXTRACTING GEOMETRY", duration: 800, progress: 20 },
+        { name: "ANALYZING SURFACE", duration: 1200, progress: 40 },
+        { name: "GENERATING POINT CLOUD", duration: 1000, progress: 60 },
+        { name: "CLASSIFYING FRAGMENT", duration: 800, progress: 80 },
+        { name: "FINALIZING ANALYSIS", duration: 600, progress: 100 }
+      ];
+
+      for (const stage of stages) {
+        setProcessingStage(stage.name);
+        await new Promise(resolve => {
+          const progressInterval = setInterval(() => {
+            setProcessingProgress(prev => {
+              const nextProgress = Math.min(prev + (stage.progress - prev) * 0.1, stage.progress);
+              return nextProgress;
+            });
+          }, 50);
+
+          setTimeout(() => {
+            clearInterval(progressInterval);
+            setProcessingProgress(stage.progress);
+            resolve();
+          }, stage.duration);
+        });
+      }
+    };
 
     try {
       const canvas = canvasRef.current;
@@ -159,6 +200,9 @@ export default function CameraCapture({
       img.src = canvas.toDataURL("image/jpeg", 0.92);
       await new Promise(r => { img.onload = r; });
 
+      // Start processing animation
+      simulateProcessingStages();
+
       const depthEstimator = await getMiDaSDepthEstimator();
       const depthTensor = await depthEstimator.estimateDepth(img);
 
@@ -169,6 +213,13 @@ export default function CameraCapture({
         img,
         { downsample: isMobile ? 3 : 2, filterNoise: true }
       ) || [];
+
+      setProcessingStage("COMPLETE");
+      setProcessingComplete(true);
+
+      setTimeout(() => {
+        setShowProcessingOverlay(false);
+      }, 1000);
 
       const data = {
         image: img.src,
@@ -187,6 +238,7 @@ export default function CameraCapture({
     } catch (err) {
       console.error(err);
       setError(err.message || "Processing failed");
+      setShowProcessingOverlay(false);
       onResult({ error: err.message, timestamp: Date.now() });
     } finally {
       setProcessing(false);
@@ -335,7 +387,7 @@ export default function CameraCapture({
           <div className="flex items-center gap-4 bg-stone-900/70 backdrop-blur-xl px-8 py-4 rounded-full border border-stone-700 shadow-2xl">
             <button
               onClick={onRetake}
-              className="px-6 py-2 bg-stone-700 hover:bg-stone-600 text-white rounded-full transition-colors"
+              className="px-6 py-2 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-full transition-colors"
             >
               Retake
             </button>
@@ -345,6 +397,91 @@ export default function CameraCapture({
             >
               Add to Session
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Processing Overlay */}
+      {showProcessingOverlay && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-xl z-50">
+          <div className="relative bg-stone-900/95 border border-amber-500/30 rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
+
+            {/* Processing Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse" />
+                <h3 className="text-xl font-light text-amber-400 tracking-wider">AI PROCESSING</h3>
+              </div>
+              <div className="text-sm text-stone-400">
+                {processingProgress.toFixed(0)}%
+              </div>
+            </div>
+
+            {/* Current Stage */}
+            <div className="mb-6">
+              <div className="text-amber-500 text-sm font-medium mb-2">{processingStage}</div>
+              <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${processingProgress}%` }}
+                >
+                  <div className="h-full bg-white/20 animate-pulse" />
+                </div>
+              </div>
+            </div>
+
+            {/* Processing Visualization */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              {[
+                { icon: "🔍", label: "Scanning", active: processingProgress > 10 },
+                { icon: "📊", label: "Analyzing", active: processingProgress > 30 },
+                { icon: "🧮", label: "Calculating", active: processingProgress > 60 },
+                { icon: "✨", label: "Finalizing", active: processingProgress > 80 }
+              ].map((item, index) => (
+                <div
+                  key={index}
+                  className={`
+                    flex flex-col items-center justify-center p-4 rounded-lg border transition-all duration-300
+                    ${item.active
+                      ? 'bg-amber-500/20 border-amber-500/40 shadow-lg shadow-amber-500/20'
+                      : 'bg-stone-800 border-stone-700'
+                    }
+                  `}
+                >
+                  <div className="text-2xl mb-2">{item.icon}</div>
+                  <div className="text-xs text-stone-300">{item.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Interactive Elements */}
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={() => setClickCount(prev => prev + 1)}
+                className="px-4 py-2 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-lg text-sm transition-colors"
+              >
+                Boost Processing ⚡
+              </button>
+              <button
+                onClick={() => setShowProcessingOverlay(false)}
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm transition-colors"
+              >
+                Skip Animation
+              </button>
+            </div>
+
+            {/* Completion Status */}
+            {processingComplete && (
+              <div className="text-center animate-fade-in">
+                <div className="text-green-400 text-lg font-medium mb-2">✓ Processing Complete</div>
+                <div className="text-sm text-stone-400">Fragment ready for analysis</div>
+              </div>
+            )}
+
+            {/* Click Counter */}
+            <div className="absolute top-4 right-4 text-xs text-stone-500">
+              Interactions: {clickCount}
+            </div>
           </div>
         </div>
       )}

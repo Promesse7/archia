@@ -6,6 +6,9 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
   const [logHistory, setLogHistory] = useState([]);
   const [currentLogIndex, setCurrentLogIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [interactiveMode, setInteractiveMode] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
+  const [hoveredSection, setHoveredSection] = useState(null);
   const mountRef = useRef(null);
 
   const systemLogs = [
@@ -202,6 +205,30 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
       renderer.dispose();
     };
   }, []);
+
+  // Interactive handlers
+  const handleInteractiveClick = (section) => {
+    setClickCount(prev => prev + 1);
+    setHoveredSection(section);
+    setInteractiveMode(true);
+
+    // Add some progress boost for engagement
+    if (clickCount > 0 && clickCount % 3 === 0) {
+      setDisplayProgress(prev => Math.min(prev + 2, 95));
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === ' ') {
+      e.preventDefault();
+      setInteractiveMode(!interactiveMode);
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener('keypress', handleKeyPress);
+    return () => window.removeEventListener('keypress', handleKeyPress);
+  }, [interactiveMode]);
 
   // Complete transition
   useEffect(() => {
@@ -424,28 +451,49 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
                     color: '#78716c',
                     letterSpacing: '0.05em',
                     fontWeight: 300,
-                    textTransform: 'uppercase'
-                  }}>Initialization</span>
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                    onClick={() => handleInteractiveClick('progress')}
+                    onMouseEnter={() => setHoveredSection('progress')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                  >
+                    {stage || 'Initialization'}
+                    {hoveredSection === 'progress' && (
+                      <span style={{ marginLeft: '8px', color: '#d97706' }}>✨</span>
+                    )}
+                  </span>
                   <div style={{
                     fontSize: '84px',
                     fontWeight: 300,
                     fontVariantNumeric: 'tabular-nums',
-                    color: '#d97706',
-                    lineHeight: 1
-                  }}>
+                    color: interactiveMode && hoveredSection === 'progress' ? '#f59e0b' : '#d97706',
+                    lineHeight: 1,
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    textShadow: interactiveMode ? '0 0 20px rgba(217, 119, 6, 0.5)' : 'none'
+                  }}
+                    onClick={() => handleInteractiveClick('progress')}
+                  >
                     {displayProgress.toFixed(0)}<span style={{ fontSize: '36px', color: '#78716c' }}>%</span>
                   </div>
                 </div>
 
-                {/* Progress bar */}
+                {/* Progress bar with interactive elements */}
                 <div style={{
                   position: 'relative',
                   height: '10px',
                   background: 'rgba(28, 25, 23, 0.6)',
                   borderRadius: '9999px',
                   overflow: 'hidden',
-                  border: '1px solid rgba(41, 37, 36, 0.5)'
-                }}>
+                  border: '1px solid rgba(41, 37, 36, 0.5)',
+                  cursor: 'pointer'
+                }}
+                  onClick={() => handleInteractiveClick('progressbar')}
+                  onMouseEnter={() => setHoveredSection('progressbar')}
+                  onMouseLeave={() => setHoveredSection(null)}
+                >
                   <div style={{
                     height: '100%',
                     background: 'linear-gradient(to right, #d97706, #f59e0b, #d97706)',
@@ -453,7 +501,8 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
                     borderRadius: '9999px',
                     position: 'relative',
                     overflow: 'hidden',
-                    width: `${displayProgress}%`
+                    width: `${displayProgress}%`,
+                    boxShadow: interactiveMode && hoveredSection === 'progressbar' ? '0 0 20px rgba(217, 119, 6, 0.6)' : 'none'
                   }}>
                     <div style={{
                       position: 'absolute',
@@ -470,6 +519,20 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
                       background: 'linear-gradient(to right, transparent, rgba(245, 158, 11, 0.4))',
                       filter: 'blur(4px)'
                     }} />
+                    {interactiveMode && (
+                      <div style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#fff',
+                        boxShadow: '0 0 10px rgba(255, 255, 255, 0.8)',
+                        animation: 'pulse 1s ease-in-out infinite'
+                      }} />
+                    )}
                   </div>
                 </div>
 
@@ -479,13 +542,46 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
                   fontSize: '12px',
                   letterSpacing: '0.05em'
                 }}>
-                  <span style={{ color: '#78716c', fontWeight: 300 }}>Model Package</span>
+                  <span style={{
+                    color: '#78716c',
+                    fontWeight: 300,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                    onClick={() => handleInteractiveClick('model')}
+                    onMouseEnter={() => setHoveredSection('model')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                  >
+                    Model Package
+                    {hoveredSection === 'model' && <span style={{ marginLeft: '4px' }}>📦</span>}
+                  </span>
                   <span style={{ color: '#a8a29e', fontVariantNumeric: 'tabular-nums' }}>
-                    <span style={{ color: '#d97706' }}>{(16 * displayProgress / 100).toFixed(1)}</span>
+                    <span style={{
+                      color: interactiveMode && hoveredSection === 'model' ? '#f59e0b' : '#d97706',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      {(16 * displayProgress / 100).toFixed(1)}
+                    </span>
                     <span style={{ color: '#44403c', margin: '0 6px' }}>/</span>
                     <span style={{ color: '#78716c' }}>16.0 MB</span>
                   </span>
                 </div>
+
+                {/* Interactive hint */}
+                {interactiveMode && (
+                  <div style={{
+                    padding: '12px',
+                    background: 'rgba(217, 119, 6, 0.1)',
+                    border: '1px solid rgba(217, 119, 6, 0.2)',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    color: '#b7791f',
+                    textAlign: 'center',
+                    animation: 'fadeIn 0.5s ease-out'
+                  }}>
+                    💡 Interactive mode active! Click elements to boost progress • Press SPACE to toggle
+                  </div>
+                )}
               </div>
 
               {/* Divider */}
@@ -576,6 +672,26 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
           75%, 100% {
             transform: scale(2);
             opacity: 0;
+          }
+        }
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.2);
+            opacity: 0.8;
+          }
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}} />
