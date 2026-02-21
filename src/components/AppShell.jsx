@@ -60,9 +60,7 @@ export const AppShell = ({ children }) => {
     <ThemeContext.Provider value={themeContextValue}>
       <div className={`min-h-screen relative ${theme === 'dark' ? 'dark bg-zinc-900' : 'bg-gray-50'}`}>
         {/* Persistent Brand Mark */}
-        <div className="fixed bottom-12  left-4 z-40">
-          <BrandMark position="footer" animated={false} />
-        </div>
+        <BrandMark position="footer" />
 
         {/* Global loading overlay */}
         {isNavigating && (

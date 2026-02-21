@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 
 export const BrandMark = ({
   variant = 'default',
-  animated = false,
   className = '',
   showTagline = false,
   position = 'inline' // New prop for positioning
@@ -48,13 +47,8 @@ export const BrandMark = ({
   return (
     <div className={`${baseClasses} ${variants[variant]} ${className} ${getPositionClasses()}`}>
 
-      {/* Animated shimmer overlay (optional) */}
-      <span
-        className={`
-          relative
-          ${animated ? 'after:absolute after:inset-0 after:bg-gradient-to-r after:from-transparent after:via-white/20 after:to-transparent after:animate-[shimmer_4s_infinite]' : ''}
-        `}
-      >
+      {/* Brand text */}
+      <span className="relative">
         ARCHIA - Made with LOVE by Team APEX 2026
       </span>
 
@@ -72,7 +66,7 @@ export const BrandMark = ({
       {/* Footer-specific styling */}
       {variant === 'footer' && (
         <span className="text-xs text-amber-400/20 mt-1 text-center">
-          Archaeological Intelligence © 2026
+          Archaeological Intelligence 2026
         </span>
       )}
     </div>
@@ -81,7 +75,6 @@ export const BrandMark = ({
 
 BrandMark.propTypes = {
   variant: PropTypes.oneOf(['default', 'minimal', 'viewer', 'watermark', 'footer']),
-  animated: PropTypes.bool,
   className: PropTypes.string,
   showTagline: PropTypes.bool,
   position: PropTypes.oneOf(['inline', 'footer', 'bottom-left', 'bottom-right'])
