@@ -61,7 +61,7 @@ export const AppShell = ({ children }) => {
       <div className={`min-h-screen relative ${theme === 'dark' ? 'dark bg-zinc-900' : 'bg-gray-50'}`}>
         {/* Persistent Brand Mark */}
         <div className="fixed bottom-12  left-4 z-40">
-          <BrandMark variant="footer" position="footer" animated={true} />
+          <BrandMark position="footer" animated={false} />
         </div>
 
         {/* Global loading overlay */}

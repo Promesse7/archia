@@ -35,7 +35,7 @@ export const BrandMark = ({
   // Position classes for different layouts
   const positionClasses = {
     inline: '', // Default inline behavior
-    footer: 'fixed bottom-4 left-1/2 -translate-x-1/2 z-10', // Bottom center footer
+    footer: 'fixed bottom-4 right-4 z-10', // Bottom right corner
     'bottom-left': 'fixed bottom-4 left-4 z-10',
     'bottom-right': 'fixed bottom-4 right-4 z-10'
   };
