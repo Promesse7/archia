@@ -21,6 +21,9 @@ export class EnhancedPotteryPipeline {
     this.classifier = null;
     this.onProgress = onProgress;
     this.initialized = false;
+    this.progressStartTime = null;
+    this.totalProcessingTime = 90000; // 90 seconds in milliseconds
+    this.progressInterval = null;
   }
 
   async initialize() {
@@ -50,6 +53,10 @@ export class EnhancedPotteryPipeline {
     }
 
     const startTime = performance.now();
+    this.progressStartTime = performance.now();
+
+    // Start smooth progress animation
+    this._startSmoothProgress();
 
     try {
       // Stage 1: Depth Estimation
@@ -148,13 +155,49 @@ export class EnhancedPotteryPipeline {
         timestamp: Date.now(),
       };
 
+      // Stop smooth progress and report completion
+      this._stopSmoothProgress();
       this._reportProgress("Processing complete", 100);
 
       return result;
     } catch (err) {
       console.error("Frame processing failed:", err);
+      this._stopSmoothProgress();
       this._reportProgress(`Error: ${err.message}`, 0);
       throw err;
+    }
+  }
+
+  /**
+   * Start smooth progress animation that increments continuously
+   */
+  _startSmoothProgress() {
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+    }
+
+    let currentProgress = 0;
+    const updateInterval = 500; // Update every 500ms
+
+    this.progressInterval = setInterval(() => {
+      const elapsed = performance.now() - this.progressStartTime;
+      const expectedProgress = Math.min((elapsed / this.totalProcessingTime) * 100, 95);
+
+      // Smooth increment towards expected progress
+      if (currentProgress < expectedProgress) {
+        currentProgress = Math.min(currentProgress + 0.5, expectedProgress);
+        this._reportProgress("Processing fragment...", currentProgress);
+      }
+    }, updateInterval);
+  }
+
+  /**
+   * Stop smooth progress animation
+   */
+  _stopSmoothProgress() {
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+      this.progressInterval = null;
     }
   }
 
@@ -360,6 +403,7 @@ export class EnhancedPotteryPipeline {
   }
 
   dispose() {
+    this._stopSmoothProgress();
     if (this.depthEstimator) {
       this.depthEstimator.dispose();
     }

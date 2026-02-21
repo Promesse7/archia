@@ -60,8 +60,8 @@ export const AppShell = ({ children }) => {
     <ThemeContext.Provider value={themeContextValue}>
       <div className={`min-h-screen relative ${theme === 'dark' ? 'dark bg-zinc-900' : 'bg-gray-50'}`}>
         {/* Persistent Brand Mark */}
-        <div className="fixed top-4 left-4 z-40">
-          <BrandMark variant="minimal" />
+        <div className="fixed bottom-12  left-4 z-40">
+          <BrandMark variant="footer" position="footer" animated={true} />
         </div>
 
         {/* Global loading overlay */}
@@ -69,7 +69,7 @@ export const AppShell = ({ children }) => {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center transition-opacity duration-300">
             <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-xl flex flex-col items-center space-y-4">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
-              <p className="text-zinc-900 dark:text-white">Loading...</p>
+              <p className="text-zinc-900 dark:text-white">Archia is Loading...</p>
             </div>
           </div>
         )}

@@ -23,7 +23,6 @@ export default function CameraCapture({
   const [aiStatus, setAiStatus] = useState("INITIALIZING...");
 
   // Interactive processing states
-  const [showProcessingOverlay, setShowProcessingOverlay] = useState(false);
   const [processingStage, setProcessingStage] = useState("ANALYZING");
   const [processingProgress, setProcessingProgress] = useState(0);
   const [interactiveMode, setInteractiveMode] = useState(false);
@@ -153,40 +152,6 @@ export default function CameraCapture({
     setProcessing(true);
     setError(null);
     setStatus("Processing...");
-    setShowProcessingOverlay(true);
-    setProcessingStage("EXTRACTING GEOMETRY");
-    setProcessingProgress(0);
-    setProcessingComplete(false);
-    setClickCount(0);
-
-    // Simulate processing stages with animations
-    const simulateProcessingStages = async () => {
-      const stages = [
-        { name: "EXTRACTING GEOMETRY", duration: 800, progress: 20 },
-        { name: "ANALYZING SURFACE", duration: 1200, progress: 40 },
-        { name: "GENERATING POINT CLOUD", duration: 1000, progress: 60 },
-        { name: "CLASSIFYING FRAGMENT", duration: 800, progress: 80 },
-        { name: "FINALIZING ANALYSIS", duration: 600, progress: 100 }
-      ];
-
-      for (const stage of stages) {
-        setProcessingStage(stage.name);
-        await new Promise(resolve => {
-          const progressInterval = setInterval(() => {
-            setProcessingProgress(prev => {
-              const nextProgress = Math.min(prev + (stage.progress - prev) * 0.1, stage.progress);
-              return nextProgress;
-            });
-          }, 50);
-
-          setTimeout(() => {
-            clearInterval(progressInterval);
-            setProcessingProgress(stage.progress);
-            resolve();
-          }, stage.duration);
-        });
-      }
-    };
 
     try {
       const canvas = canvasRef.current;
@@ -200,9 +165,6 @@ export default function CameraCapture({
       img.src = canvas.toDataURL("image/jpeg", 0.92);
       await new Promise(r => { img.onload = r; });
 
-      // Start processing animation
-      simulateProcessingStages();
-
       const depthEstimator = await getMiDaSDepthEstimator();
       const depthTensor = await depthEstimator.estimateDepth(img);
 
@@ -213,13 +175,6 @@ export default function CameraCapture({
         img,
         { downsample: isMobile ? 3 : 2, filterNoise: true }
       ) || [];
-
-      setProcessingStage("COMPLETE");
-      setProcessingComplete(true);
-
-      setTimeout(() => {
-        setShowProcessingOverlay(false);
-      }, 1000);
 
       const data = {
         image: img.src,
@@ -238,7 +193,6 @@ export default function CameraCapture({
     } catch (err) {
       console.error(err);
       setError(err.message || "Processing failed");
-      setShowProcessingOverlay(false);
       onResult({ error: err.message, timestamp: Date.now() });
     } finally {
       setProcessing(false);
@@ -281,11 +235,85 @@ export default function CameraCapture({
 
         {/* Captured Fragment Display */}
         {capturedFragment && (
-          <img
-            src={capturedFragment.image}
-            alt="Captured fragment"
-            className="w-full h-full object-cover"
-          />
+          <div className="relative w-full h-full">
+            {/* Fragment Image */}
+            <img
+              src={capturedFragment.image}
+              alt="Captured fragment"
+              className="w-full h-full object-cover"
+            />
+
+            {/* Fragment Analysis Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent">
+              {/* Top Analysis Bar */}
+              <div className="absolute top-0 left-0 right-0 p-6">
+                <div className="flex items-start justify-between">
+                  {/* Classification Badge */}
+                  <div className="bg-stone-900/90 backdrop-blur-md border border-amber-500/30 rounded-lg px-4 py-2">
+                    <div className="text-xs text-amber-400 font-medium tracking-wider mb-1">FRAGMENT TYPE</div>
+                    <div className="text-lg font-bold text-white capitalize">
+                      {capturedFragment.classification?.fragmentType || 'Unknown'}
+                    </div>
+                    <div className="text-xs text-stone-400 mt-1">
+                      {Math.round((capturedFragment.classification?.confidence || 0) * 100)}% confidence
+                    </div>
+                  </div>
+
+                  {/* Processing Stats */}
+                  <div className="bg-stone-900/90 backdrop-blur-md border border-stone-700/30 rounded-lg px-4 py-2 text-right">
+                    <div className="text-xs text-stone-400 font-medium tracking-wider mb-1">ANALYSIS RESULTS</div>
+                    <div className="text-sm text-white">
+                      {capturedFragment.pointCloud?.length?.toLocaleString() || '0'} points
+                    </div>
+                    <div className="text-xs text-stone-400 mt-1">
+                      {capturedFragment.processingTime ? `${(capturedFragment.processingTime / 1000).toFixed(1)}s` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Details */}
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  {/* Material Analysis */}
+                  <div className="bg-stone-900/90 backdrop-blur-md border border-stone-700/30 rounded-lg p-3">
+                    <div className="text-xs text-stone-400 font-medium tracking-wider mb-1">MATERIAL</div>
+                    <div className="text-sm text-white">Ceramic</div>
+                    <div className="text-xs text-amber-400">Ancient pottery</div>
+                  </div>
+
+                  {/* Dimensions */}
+                  <div className="bg-stone-900/90 backdrop-blur-md border border-stone-700/30 rounded-lg p-3">
+                    <div className="text-xs text-stone-400 font-medium tracking-wider mb-1">ESTIMATED SIZE</div>
+                    <div className="text-sm text-white">
+                      {capturedFragment.width && capturedFragment.height
+                        ? `${capturedFragment.width}×${capturedFragment.height}px`
+                        : 'Unknown'
+                      }
+                    </div>
+                    <div className="text-xs text-amber-400">Fragment dimensions</div>
+                  </div>
+
+                  {/* Timestamp */}
+                  <div className="bg-stone-900/90 backdrop-blur-md border border-stone-700/30 rounded-lg p-3">
+                    <div className="text-xs text-stone-400 font-medium tracking-wider mb-1">CAPTURED</div>
+                    <div className="text-sm text-white">
+                      {new Date(capturedFragment.timestamp || Date.now()).toLocaleTimeString()}
+                    </div>
+                    <div className="text-xs text-amber-400">Ready for analysis</div>
+                  </div>
+                </div>
+
+                {/* Success Indicator */}
+                <div className="flex items-center justify-center">
+                  <div className="bg-green-500/20 border border-green-500/30 rounded-full px-4 py-2 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-green-400 text-sm font-medium">Fragment processed successfully</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -302,7 +330,7 @@ export default function CameraCapture({
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="relative w-72 h-72 md:w-96 md:h-96">
           {/* Main frame */}
-          <div className="absolute inset-0 border border-amber-500/30 rounded-2xl backdrop-blur-sm" />
+          <div className="absolute inset-0 border border-amber-500/30 rounded-2xl" />
 
           {/* Corner accents */}
           <div className="absolute top-0 left-0 w-10 h-10 border-t border-l border-amber-500" />
@@ -314,10 +342,91 @@ export default function CameraCapture({
 
       {/* Live AI Feedback */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 pointer-events-none">
-        <div className="px-6 py-2 bg-stone-900/70 backdrop-blur-md border border-amber-500/20 rounded-full text-sm tracking-wider text-amber-400 transition-opacity duration-300">
-          {aiStatus}
+        <div className="px-6 py-3 bg-stone-900/80 border border-amber-500/20 rounded-2xl text-center shadow-xl">
+          <div className="text-xs text-amber-400 font-medium tracking-wider mb-1">AI VISUAL INTELLIGENCE</div>
+          <div className="text-sm text-white font-semibold">{aiStatus}</div>
+
+          {/* AI Capabilities Indicators */}
+          <div className="flex items-center justify-center gap-4 mt-2">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-green-400">Depth Estimation</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-blue-400">Fragment Classification</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-purple-400">3D Reconstruction</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* AI Capabilities Showcase - Only when camera is active and no fragment captured */}
+      {stream && !capturedFragment && (
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+          <div className="bg-stone-900/80 border border-amber-500/20 rounded-2xl p-4 shadow-xl backdrop-blur-sm max-w-xs">
+            <div className="text-xs text-amber-400 font-medium tracking-wider mb-3">AI CAPABILITIES</div>
+
+            <div className="space-y-3">
+              {/* Depth Estimation */}
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-xs text-green-400 font-medium">Depth Estimation</div>
+                  <div className="text-xs text-stone-400">MiDaS-inspired 3D depth mapping</div>
+                </div>
+              </div>
+
+              {/* Fragment Classification */}
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-xs text-blue-400 font-medium">Fragment Classification</div>
+                  <div className="text-xs text-stone-400">CNN-based pottery fragment analysis</div>
+                </div>
+              </div>
+
+              {/* 3D Reconstruction */}
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="text-xs text-purple-400 font-medium">3D Reconstruction</div>
+                  <div className="text-xs text-stone-400">Point cloud generation & surface modeling</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Processing Power */}
+            <div className="mt-4 pt-3 border-t border-stone-700">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-stone-400">Processing Power</div>
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                  <div className="w-1.5 h-1.5 bg-stone-600 rounded-full"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error State Overlay */}
       {error && !capturedFragment && (
@@ -397,91 +506,6 @@ export default function CameraCapture({
             >
               Add to Session
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Interactive Processing Overlay */}
-      {showProcessingOverlay && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/90 backdrop-blur-xl z-50">
-          <div className="relative bg-stone-900/95 border border-amber-500/30 rounded-2xl p-8 max-w-md mx-4 shadow-2xl">
-
-            {/* Processing Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse" />
-                <h3 className="text-xl font-light text-amber-400 tracking-wider">AI PROCESSING</h3>
-              </div>
-              <div className="text-sm text-stone-400">
-                {processingProgress.toFixed(0)}%
-              </div>
-            </div>
-
-            {/* Current Stage */}
-            <div className="mb-6">
-              <div className="text-amber-500 text-sm font-medium mb-2">{processingStage}</div>
-              <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${processingProgress}%` }}
-                >
-                  <div className="h-full bg-white/20 animate-pulse" />
-                </div>
-              </div>
-            </div>
-
-            {/* Processing Visualization */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              {[
-                { icon: "🔍", label: "Scanning", active: processingProgress > 10 },
-                { icon: "📊", label: "Analyzing", active: processingProgress > 30 },
-                { icon: "🧮", label: "Calculating", active: processingProgress > 60 },
-                { icon: "✨", label: "Finalizing", active: processingProgress > 80 }
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className={`
-                    flex flex-col items-center justify-center p-4 rounded-lg border transition-all duration-300
-                    ${item.active
-                      ? 'bg-amber-500/20 border-amber-500/40 shadow-lg shadow-amber-500/20'
-                      : 'bg-stone-800 border-stone-700'
-                    }
-                  `}
-                >
-                  <div className="text-2xl mb-2">{item.icon}</div>
-                  <div className="text-xs text-stone-300">{item.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Interactive Elements */}
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={() => setClickCount(prev => prev + 1)}
-                className="px-4 py-2 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded-lg text-sm transition-colors"
-              >
-                Boost Processing ⚡
-              </button>
-              <button
-                onClick={() => setShowProcessingOverlay(false)}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm transition-colors"
-              >
-                Skip Animation
-              </button>
-            </div>
-
-            {/* Completion Status */}
-            {processingComplete && (
-              <div className="text-center animate-fade-in">
-                <div className="text-green-400 text-lg font-medium mb-2">✓ Processing Complete</div>
-                <div className="text-sm text-stone-400">Fragment ready for analysis</div>
-              </div>
-            )}
-
-            {/* Click Counter */}
-            <div className="absolute top-4 right-4 text-xs text-stone-500">
-              Interactions: {clickCount}
-            </div>
           </div>
         </div>
       )}

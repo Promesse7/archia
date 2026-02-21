@@ -77,11 +77,11 @@ export default function LoadingScreen({ progress = 0, stage = "Initializing visu
     const geometry = new THREE.LatheGeometry(points, 64);
 
     const material = new THREE.MeshStandardMaterial({
-      color: 0xc66a2b,              // warm clay tone
-      metalness: 0.15,
-      roughness: 0.75,
-      emissive: 0xd97706,
-      emissiveIntensity: 0.15,
+      color: 0x8b6f47,              // Reduced from 0xc66a2b - more muted clay tone
+      metalness: 0.10,              // Reduced from 0.15 - less metallic
+      roughness: 0.80,              // Increased from 0.75 - more matte
+      emissive: 0x6b5d54,           // Reduced from 0xd97706 - more subtle emissive
+      emissiveIntensity: 0.08,      // Reduced from 0.15 - less glow
       transparent: true,
       opacity: 0.95
     });

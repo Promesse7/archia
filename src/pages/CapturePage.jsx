@@ -80,16 +80,47 @@ export default function CapturePage() {
   };
 
   const handleAddToSession = async () => {
-    if (capturedFragment) {
-      const fragmentCount = await addFragment(capturedFragment); // Wait for fragment to be added
-      console.log('Fragment added successfully, total fragments:', fragmentCount);
-      setCapturedFragment(null);
-      setCameraStatus('ready');
+    if (!capturedFragment) return;
 
-      // Small delay to ensure React state update cycle completes
+    try {
+      setCameraStatus('adding');
+      setProcessingProgress({ stage: "Adding fragment to session...", percent: 0 });
+
+      // Simulate adding progress
+      const addProgressInterval = setInterval(() => {
+        setProcessingProgress(prev => {
+          const nextProgress = Math.min(prev.percent + 10, 90);
+          return { stage: "Adding fragment to session...", percent: nextProgress };
+        });
+      }, 100);
+
+      const fragmentCount = await addFragment(capturedFragment); // Wait for fragment to be added
+
+      clearInterval(addProgressInterval);
+      setProcessingProgress({ stage: "Fragment added successfully!", percent: 100 });
+
+      console.log('Fragment added successfully, total fragments:', fragmentCount);
+
+      // Small delay to show completion before navigation
       setTimeout(() => {
+        setCapturedFragment(null);
+        setCameraStatus('ready');
+        setProcessingProgress(null);
+
+        // Navigate to reconstruction page
         navigate('reconstruct');
-      }, 50);
+      }, 1000);
+
+    } catch (err) {
+      console.error("Error adding fragment to session:", err);
+      setCameraStatus('error');
+      setProcessingProgress({ stage: "Failed to add fragment", percent: 0 });
+
+      // Reset after error
+      setTimeout(() => {
+        setProcessingProgress(null);
+        setCameraStatus('success');
+      }, 2000);
     }
   };
 
@@ -104,6 +135,8 @@ export default function CapturePage() {
         return 'Initializing camera...';
       case 'processing':
         return processingProgress?.stage || 'Processing fragment...';
+      case 'adding':
+        return processingProgress?.stage || 'Adding fragment to session...';
       case 'success':
         return 'Fragment captured successfully';
       case 'error':
@@ -130,21 +163,66 @@ export default function CapturePage() {
       {processingProgress && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/95 z-50">
           <div className="px-8 py-6 bg-stone-900/90 backdrop-blur-xl border border-amber-500/20 rounded-2xl text-center max-w-md mx-4 shadow-2xl">
-            <h3 className="text-amber-400 font-medium mb-4 tracking-wide">
+            {/* Status Icon */}
+            <div className="mb-4">
+              {processingProgress.percent === 100 ? (
+                <div className="w-12 h-12 mx-auto bg-green-500 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              ) : (
+                <div className="w-12 h-12 mx-auto bg-amber-500 rounded-full flex items-center justify-center animate-pulse">
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
+
+            <h3 className={`font-medium mb-4 tracking-wide ${processingProgress.percent === 100 ? 'text-green-400' : 'text-amber-400'
+              }`}>
               {processingProgress.stage}
             </h3>
+
             <div className="w-full h-2 bg-stone-700 rounded-full overflow-hidden mb-3">
               <div
-                className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-300"
+                className={`h-full transition-all duration-300 ${processingProgress.percent === 100
+                  ? 'bg-gradient-to-r from-green-500 to-green-600'
+                  : 'bg-gradient-to-r from-amber-500 to-amber-600'
+                  }`}
                 style={{ width: `${processingProgress.percent}%` }}
               />
             </div>
+
             <div className="text-stone-400 text-sm">
               {processingProgress.percent.toFixed(0)}%
             </div>
+
+            {/* Completion Message */}
+            {processingProgress.percent === 100 && (
+              <div className="mt-4 text-green-400 text-sm animate-fade-in">
+                Redirecting to reconstruction...
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.5s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
